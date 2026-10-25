@@ -79,6 +79,7 @@ A new key needs one there in the same pull request.
 | `shamsi_date` | bool | Show the Solar Hijri date above the Gregorian one |
 | `lunar_date` | bool | Show the lunisolar date under the Gregorian one, e.g. `LUNAR 13/9 · YEAR OF THE HORSE`, or `13/9 ÂM LỊCH · BÍNH NGỌ` in Vietnamese; a leap month is marked. Off by default |
 | `dashboard` | bool | smtv-home fork only. Weather, lunar calendar and price cards between the clock row and the dock title, sized to the room the layout leaves (hidden when there is too little). Off by default. Phase B shows placeholder numbers |
+| `design_frame` | bool | smtv-home fork only. Lays the header, the dashboard cards and a six-tile dock out on the reference design's coordinates (`DesignFrame`, a 2000x1125 mock-up scaled to the screen width). Use with `dashboard`, `columns: 6`, `rows_below_dock: 0`. Off by default; positions are calibrated against a real TV screenshot |
 | `lunar_utc_offset` | 0 to 14 | Hours east of UTC the lunar calendar is computed for: `7` is the Vietnamese calendar, `8` the Chinese one; they differ by a day now and then (and by a month in 1985). Unset: 7 when the TV is in Vietnamese, 8 otherwise |
 | `greeting_name` | string | A name after the greeting, e.g. `"Mr. Trịnh"` for GOOD MORNING, MR. TRỊNH; empty for the greeting alone |
 | `show_greeting` | bool | The greeting above the clock (`true` by default); `false` hides it |

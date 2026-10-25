@@ -184,6 +184,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** smtv-home dashboard cards; null view logic is skipped when config dashboard is off. */
     private DashboardView dashboardView;
     private boolean dashboardOn;
+    /** Reference geometry when config design_frame is on, else null. */
+    private DesignFrame frame;
     private boolean lunar;
     private int lunarOffset;
     private TextView stats;
@@ -480,6 +482,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         lunarDate = findViewById(R.id.lunarDate);
         dashboardView = findViewById(R.id.dashboard);
         dashboardOn = cfg.dashboard;
+        frame = cfg.designFrame ? new DesignFrame(getResources().getDisplayMetrics().widthPixels) : null;
+        AppAdapter.frame = frame;
+        if (frame != null) {
+            View column = findViewById(R.id.column);
+            column.setPadding(frame.px(DesignFrame.CONTENT_LEFT), frame.px(DesignFrame.HEADER_TOP),
+                    frame.px(DesignFrame.W - DesignFrame.CONTENT_RIGHT), column.getPaddingBottom());
+            if (dashboardOn) dashboardView.setCards(DesignFrame.CARD_WIDTHS, DesignFrame.CARD_GAP);
+        }
         lunar = cfg.lunarDate;
         lunarOffset = Lunar.offsetFor(cfg.lunarUtcOffset, Locale.getDefault());
         if (lunar) lunarDate.setVisibility(View.VISIBLE);
@@ -496,6 +506,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         hiddenApps = new HashSet<>(cfg.hiddenApps);
 
         grid = findViewById(R.id.grid);
+        if (frame != null) grid.setPadding(frame.gridSidePadding(), grid.getPaddingTop(), frame.gridSidePadding(), grid.getPaddingBottom());
         rtlAppGrid = getResources().getBoolean(R.bool.rtl_app_grid);
         // Mirror only the app grid; the header and other locales keep their own layouts.
         // single_row: one span laid out sideways, so the same adapter, glass and dock band serve a scrolling row.
@@ -590,8 +601,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             int h = b - t;
             // Item height follows the tile size, which follows the columns and the rows that must fit (AppAdapter.tileWidthPx).
             int inner = (r - l) - grid.getPaddingLeft() - grid.getPaddingRight();
-            int tileW = AppAdapter.tileWidthPx(inner, h, COLUMNS, rowsBelowDock, cfg.dockTitle, cfg.dockRow, density);
-            int itemH = AppAdapter.itemHeightPx(AppAdapter.tileHeightPx(tileW), density);
+            int tileW = frame != null ? frame.tileWidth() : AppAdapter.tileWidthPx(inner, h, COLUMNS, rowsBelowDock, cfg.dockTitle, cfg.dockRow, density);
+            int itemH = AppAdapter.itemHeightPx(frame != null ? frame.tileHeight() : AppAdapter.tileHeightPx(tileW), density);
             int dockRow = itemH + (int) (AppAdapter.DOCK_EXTRA_DP * density);   // item height plus DockDecoration offsets
             int gridRows = itemH * rowsBelowDock;
             // Keep the hero below the header when the library is enabled on a short screen,
@@ -606,6 +617,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // A single row never shows the names under its tiles (the title above the row names the app), so the
             // 7dp gap and 22dp label item_app.xml keeps for them would only lift the row: sit it that much lower.
             if (singleRow && !cfg.alwaysShowNames) want += (int) (29 * density);
+            // The tile's top is the item padding (8dp) plus DockDecoration's top offset (6dp) below the grid padding.
+            if (frame != null) want = Math.max(0, frame.tileTop() - ((View) grid.getParent()).getTop() - (int) (14 * density));
             if (dashboardOn) placeDashboard(want, cfg.dockTitle);
             if (grid.getPaddingTop() != want) {
                 grid.setPadding(grid.getPaddingLeft(), want, grid.getPaddingRight(), grid.getPaddingBottom());
@@ -1692,6 +1705,21 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      * cover the clock, the stats line or the app name.
      */
     private void placeDashboard(int want, boolean title) {
+        if (frame != null) {
+            // Design frame: the cards sit at the mock-up's own box, whatever the flow layout leaves.
+            dashboardView.post(() -> {
+                android.widget.FrameLayout.LayoutParams lp = (android.widget.FrameLayout.LayoutParams) dashboardView.getLayoutParams();
+                lp.gravity = android.view.Gravity.TOP | android.view.Gravity.LEFT;
+                lp.leftMargin = frame.cardsLeft();
+                lp.topMargin = frame.cardsTop();
+                lp.rightMargin = 0;
+                lp.width = frame.cardsWidth();
+                lp.height = frame.cardsHeight();
+                dashboardView.setLayoutParams(lp);
+                dashboardView.setVisibility(View.VISIBLE);
+            });
+            return;
+        }
         dashboardView.post(() -> {
             View wrapper = (View) grid.getParent();
             View header = (View) findViewById(R.id.leftBlock).getParent();
@@ -1722,7 +1750,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void showHero(int position, float dockTopInRoot) {
         String label = adapter.labelAt(position);
         int color = adapter.ambientColorAt(position);
-        float y = dockTopInRoot - 14 * density - 26 * density - hero.getHeight();
+        float y = frame != null ? frame.titleTop() : dockTopInRoot - 14 * density - 26 * density - hero.getHeight();
         boolean changed = !label.contentEquals(heroName.getText());
         if (cinematic && heroArtAlpha > 0f) showHeroArt(position);
 

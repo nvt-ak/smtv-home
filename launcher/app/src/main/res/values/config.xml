@@ -207,6 +207,9 @@
          config.json dashboard. Off by default. The cards size themselves to the room the layout leaves and hide
          when there is too little. -->
     <bool name="dashboard">false</bool>
+    <!-- smtv-home fork: lay the header, the dashboard cards and the dock out on the reference design's
+         coordinates (DesignFrame), scaled to the screen width. config.json design_frame. Off by default. -->
+    <bool name="design_frame">false</bool>
 
     <!-- A name after the greeting: "Mr. Trịnh" shows GOOD MORNING, MR. TRỊNH. Empty: the greeting alone. -->
     <string name="greeting_name" translatable="false"></string>

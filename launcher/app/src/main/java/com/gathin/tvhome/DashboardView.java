@@ -33,6 +33,9 @@ final class DashboardView extends View {
     private static final int GREEN = 0xFF58D68D;
 
     private final float d;
+    /** Card widths and the gap between them, in any shared unit; null keeps the default 1.5 : 1 : 1 with a 16dp gap. */
+    private float[] widths;
+    private float gapUnits;
     private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint sheen = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint border = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -66,16 +69,34 @@ final class DashboardView extends View {
         }
     }
 
+    /** Sizes the cards by the design's own widths (DesignFrame.CARD_WIDTHS) so they match the mock-up exactly. */
+    void setCards(float[] cardWidths, float gap) {
+        widths = cardWidths.clone();
+        gapUnits = gap;
+        invalidate();
+    }
+
     @Override
     protected void onDraw(Canvas c) {
         float w = getWidth();
         float h = getHeight();
         if (w <= 0 || h < MIN_HEIGHT_DP * d) return;
-        float gap = 16 * d;
-        float unit = (w - 2 * gap) / 3.5f;
+        float[] weights = widths != null ? widths : new float[] {1.5f, 1f, 1f};
+        float total = 0;
+        for (float v : weights) total += v;
+        float gap;
+        float unit;
+        if (widths != null) {
+            float whole = total + gapUnits * (weights.length - 1);
+            unit = w / whole;
+            gap = gapUnits * unit;
+        } else {
+            gap = 16 * d;
+            unit = (w - 2 * gap) / total;
+        }
         float x = 0;
         for (int i = 0; i < 3; i++) {
-            float cw = unit * (i == 0 ? 1.5f : 1f);
+            float cw = unit * weights[i];
             box.set(x, 0, x + cw, h);
             glass(c, box);
             c.save();
