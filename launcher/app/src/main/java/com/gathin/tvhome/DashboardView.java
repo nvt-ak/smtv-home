@@ -45,6 +45,7 @@ public final class DashboardView extends View {
     private final RectF box = new RectF();
     private final RectF small = new RectF();
     private final Path clip = new Path();
+    private AuroraCards aurora;
     private Typeface regular;
     private Typeface light;
     private Typeface medium;
@@ -87,6 +88,12 @@ public final class DashboardView extends View {
         invalidate();
     }
 
+    /** Switches to the Aurora card design (DesignFrame.Profile.glassTiles). */
+    void setAurora(boolean on) {
+        aurora = on ? new AuroraCards(getContext()) : null;
+        invalidate();
+    }
+
     @Override
     protected void onDraw(Canvas c) {
         float w = getWidth();
@@ -109,6 +116,14 @@ public final class DashboardView extends View {
         for (int i = 0; i < 3; i++) {
             float cw = unit * weights[i];
             box.set(x, 0, x + cw, h);
+            if (aurora != null) {
+                c.save();
+                c.translate(x, 0);
+                aurora.draw(c, i, cw, h);
+                c.restore();
+                x += cw + gap;
+                continue;
+            }
             glass(c, box);
             c.save();
             c.translate(x, 0);

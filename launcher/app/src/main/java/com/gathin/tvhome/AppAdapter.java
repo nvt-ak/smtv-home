@@ -438,14 +438,14 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             card.setBackgroundResource(R.drawable.tile_glass_bg);
             View icon = v.findViewById(R.id.icon);
             FrameLayout.LayoutParams iconLp = (FrameLayout.LayoutParams) icon.getLayoutParams();
-            iconLp.width = iconLp.height = Math.round(h * 0.42f);
+            iconLp.width = iconLp.height = Math.round(h * 0.40f);
             iconLp.gravity = android.view.Gravity.CENTER_HORIZONTAL | android.view.Gravity.TOP;
-            iconLp.topMargin = Math.round(h * 0.16f);
+            iconLp.topMargin = Math.round(h * 0.15f);
             iconLp.bottomMargin = 0;
             icon.setLayoutParams(iconLp);
             TextView label = v.findViewById(R.id.label);
-            label.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, h * 0.105f);
-            label.setPadding(label.getPaddingLeft(), 0, label.getPaddingRight(), Math.round(h * 0.13f));
+            label.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, h * 0.15f);
+            label.setPadding(label.getPaddingLeft(), 0, label.getPaddingRight(), Math.round(h * 0.11f));
             name.setVisibility(View.GONE);
         }
         return new Holder(v, listener, animations, advancedEffects, reducedMotion, restNameAlpha, focusOvershoot);

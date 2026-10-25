@@ -488,7 +488,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (frame != null) {
             View column = findViewById(R.id.column);
             column.setPadding(frame.contentLeft(), frame.headerTop(), frame.contentRightInset(), column.getPaddingBottom());
-            if (dashboardOn) dashboardView.setCards(frame.cardWidths(), frame.cardGap());
+            if (dashboardOn) {
+                dashboardView.setCards(frame.cardWidths(), frame.cardGap());
+                dashboardView.setAurora(frame.glassTiles());
+            }
             if (!frame.hasTitle()) hero.setVisibility(View.GONE);
             if (frame.glassTiles()) setUpAuroraChrome(cfg);
         }
@@ -1737,7 +1740,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         date.setLetterSpacing(0f);
         date.setTextSize(22f);
         date.setTextColor(0xFFF5FBFC);
-        date.setTypeface(Typeface.create(date.getTypeface(), Typeface.BOLD));
+        
         lunarDate.setAllCaps(false);
         lunarDate.setLetterSpacing(0f);
         lunarDate.setTextSize(15f);
@@ -1745,9 +1748,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         lunarDate.setPadding(0, 0, 0, 0);
 
         int muted = 0xFFB9CBD0;
-        addAuroraText(cfg.tagline, frame.contentLeft(), frame.px(236f), android.view.Gravity.LEFT, 15f, muted);
-        addAuroraText(cfg.cornerBottom, frame.contentLeft(), frame.px(1084f), android.view.Gravity.LEFT, 12f, 0x99B9CBD0);
-        addAuroraText(cfg.cornerRight, frame.contentRightInset(), frame.px(1084f), android.view.Gravity.RIGHT, 12f, 0x99B9CBD0);
+        addAuroraText(cfg.tagline, frame.contentLeft(), frame.px(236f), android.view.Gravity.LEFT, 17f, muted, 0.12f, false);
+        addAuroraText(cfg.cornerBottom, frame.contentLeft(), frame.px(1075f), android.view.Gravity.LEFT, 12f, 0x99B9CBD0, 0.2f, true);
+        addAuroraText(cfg.cornerRight, frame.contentRightInset(), frame.px(1075f), android.view.Gravity.RIGHT, 12f, 0x99B9CBD0, 0.2f, true);
 
         pageDots = new PageDotsView(this);
         pageDots.set(1, 0);
@@ -1759,18 +1762,22 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         glass.setVisibility(View.GONE);
     }
 
-    private void addAuroraText(String text, int inset, int top, int gravity, float sp, int color) {
+    /** Small spaced text; {@code top} is a y in pixels, or the bottom edge of the text when {@code fromBottom}. */
+    private void addAuroraText(String text, int inset, int top, int gravity, float sp, int color, float spacing, boolean fromBottom) {
         if (text == null || text.isEmpty()) return;
         TextView t = new TextView(this);
         t.setText(text);
         t.setTextSize(sp);
         t.setTextColor(color);
-        t.setSingleLine(true);
+        t.setLetterSpacing(spacing);
+        t.setAllCaps(fromBottom);
+        t.setGravity(gravity);
         t.setFocusable(false);
         t.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        lp.gravity = android.view.Gravity.TOP | gravity;
-        lp.topMargin = top;
+        lp.gravity = (fromBottom ? android.view.Gravity.BOTTOM : android.view.Gravity.TOP) | gravity;
+        if (fromBottom) lp.bottomMargin = getResources().getDisplayMetrics().heightPixels - top;
+        else lp.topMargin = top;
         if (gravity == android.view.Gravity.RIGHT) lp.rightMargin = inset;
         else lp.leftMargin = inset;
         root.addView(t, lp);
