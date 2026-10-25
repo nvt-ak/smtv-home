@@ -181,6 +181,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private TextView shamsiDate;
     /** lunar_date: the lunisolar date under the date line, and the time zone it is computed for. */
     private TextView lunarDate;
+    /** smtv-home dashboard cards; null view logic is skipped when config dashboard is off. */
+    private DashboardView dashboardView;
+    private boolean dashboardOn;
     private boolean lunar;
     private int lunarOffset;
     private TextView stats;
@@ -475,6 +478,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         showStats = cfg.showStats;
         shamsi = cfg.shamsiDate;
         lunarDate = findViewById(R.id.lunarDate);
+        dashboardView = findViewById(R.id.dashboard);
+        dashboardOn = cfg.dashboard;
         lunar = cfg.lunarDate;
         lunarOffset = Lunar.offsetFor(cfg.lunarUtcOffset, Locale.getDefault());
         if (lunar) lunarDate.setVisibility(View.VISIBLE);
@@ -601,6 +606,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // A single row never shows the names under its tiles (the title above the row names the app), so the
             // 7dp gap and 22dp label item_app.xml keeps for them would only lift the row: sit it that much lower.
             if (singleRow && !cfg.alwaysShowNames) want += (int) (29 * density);
+            if (dashboardOn) placeDashboard(want, cfg.dockTitle);
             if (grid.getPaddingTop() != want) {
                 grid.setPadding(grid.getPaddingLeft(), want, grid.getPaddingRight(), grid.getPaddingBottom());
                 // A vertical grid parks the dock on the new padding line by scrolling (onTileFocused); a sideways
@@ -1676,6 +1682,39 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (!glassShown || card.getWidth() != glassCardW || glass.getWidth() != w || glass.getHeight() != h) {
             onTileFocused(pos, card);
         }
+    }
+
+    // ---- dashboard -------------------------------------------------------------------------------
+
+    /**
+     * Sizes the dashboard to the room between the header and the dock title. The dock row starts at the grid's
+     * top padding (want), and the title sits above it (showHero), so the cards end above the title and never
+     * cover the clock, the stats line or the app name.
+     */
+    private void placeDashboard(int want, boolean title) {
+        dashboardView.post(() -> {
+            View wrapper = (View) grid.getParent();
+            View header = (View) findViewById(R.id.leftBlock).getParent();
+            int heroH = hero.getHeight() > 0 ? hero.getHeight() : (int) (70 * density);
+            int heroRoom = title ? heroH + (int) (40 * density) : (int) (16 * density);
+            int top = header.getBottom() + (int) (12 * density);
+            int bottom = wrapper.getTop() + want - heroRoom - (int) (14 * density);
+            int h = bottom - top;
+            if (h < (int) (DashboardView.MIN_HEIGHT_DP * density)) {
+                dashboardView.setVisibility(View.GONE);
+                return;
+            }
+            android.widget.FrameLayout.LayoutParams lp = (android.widget.FrameLayout.LayoutParams) dashboardView.getLayoutParams();
+            int side = (int) (56 * density);
+            if (lp.topMargin != top || lp.height != h || lp.leftMargin != side) {
+                lp.topMargin = top;
+                lp.height = h;
+                lp.leftMargin = side;
+                lp.rightMargin = side;
+                dashboardView.setLayoutParams(lp);
+            }
+            dashboardView.setVisibility(View.VISIBLE);
+        });
     }
 
     // ---- top shelf -------------------------------------------------------------------------------

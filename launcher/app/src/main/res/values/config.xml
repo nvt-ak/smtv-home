@@ -203,6 +203,11 @@
     <!-- Lunisolar (Vietnamese / Chinese) date under the date; config.json lunar_date, lunar_utc_offset (7 or 8, default by locale). -->
     <bool name="lunar_date">false</bool>
 
+    <!-- smtv-home fork: weather, lunar calendar and price cards between the clock row and the dock title;
+         config.json dashboard. Off by default. The cards size themselves to the room the layout leaves and hide
+         when there is too little. -->
+    <bool name="dashboard">false</bool>
+
     <!-- A name after the greeting: "Mr. Trịnh" shows GOOD MORNING, MR. TRỊNH. Empty: the greeting alone. -->
     <string name="greeting_name" translatable="false"></string>
     <!-- The greeting above the clock ("Good evening"). false hides it. Can also be set with "show_greeting" in a theme. -->
