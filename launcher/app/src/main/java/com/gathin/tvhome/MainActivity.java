@@ -1704,7 +1704,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      * top padding (want), and the title sits above it (showHero), so the cards end above the title and never
      * cover the clock, the stats line or the app name.
      */
+    private int dashWant;
+    private boolean dashTitle;
+
     private void placeDashboard(int want, boolean title) {
+        dashWant = want;
+        dashTitle = title;
         if (frame != null) {
             // Design frame: the cards sit at the mock-up's own box, whatever the flow layout leaves.
             dashboardView.post(() -> {
@@ -1725,7 +1730,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             View header = (View) findViewById(R.id.leftBlock).getParent();
             int heroH = hero.getHeight() > 0 ? hero.getHeight() : (int) (70 * density);
             int heroRoom = title ? heroH + (int) (40 * density) : (int) (16 * density);
-            int top = header.getBottom() + (int) (12 * density);
+            int headerBottom = header.getBottom();
+            // The stats line is the header's last row; the header may have been measured before it was shown.
+            if (stats != null && stats.getVisibility() == View.VISIBLE && stats.getHeight() > 0) {
+                headerBottom = Math.max(headerBottom, header.getTop() + stats.getBottom());
+            }
+            int top = headerBottom + (int) (12 * density);
             int bottom = wrapper.getTop() + want - heroRoom - (int) (14 * density);
             int h = bottom - top;
             if (h < (int) (DashboardView.MIN_HEIGHT_DP * density)) {
@@ -2094,7 +2104,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 if (statsBg != bg) return;
                 String line = readStatsLine();
                 handler.post(() -> {
-                    if (showStats && stats != null && statsBg == bg) stats.setText(line);
+                    if (showStats && stats != null && statsBg == bg) {
+                        boolean first = stats.getHeight() == 0;
+                        stats.setText(line);
+                        if (first && dashboardOn) stats.post(() -> placeDashboard(dashWant, dashTitle));
+                    }
                 });
                 if (statsBg == bg) bg.postDelayed(this, STATS_MS);
             }

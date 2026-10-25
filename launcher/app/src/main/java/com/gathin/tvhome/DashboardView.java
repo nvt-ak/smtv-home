@@ -118,8 +118,9 @@ final class DashboardView extends View {
         clip.addRoundRect(r, rad, rad, Path.Direction.CW);
         c.save();
         c.clipPath(clip);
-        sheen.setShader(new LinearGradient(r.left, r.top, r.left + r.width() * 0.8f, r.top + r.height() * 0.8f,
-                0x2EFFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP));
+        // Vertical and eased out: a slanted two-stop ramp ends in a hard visible edge (dark triangles on a TV).
+        sheen.setShader(new LinearGradient(0, r.top, 0, r.top + r.height() * 0.7f,
+                new int[] {0x26FFFFFF, 0x0DFFFFFF, 0x00FFFFFF}, new float[] {0f, 0.5f, 1f}, Shader.TileMode.CLAMP));
         c.drawRect(r, sheen);
         c.restore();
         border.setShader(new LinearGradient(r.left, r.top, r.right, r.bottom,
