@@ -80,6 +80,10 @@ A new key needs one there in the same pull request.
 | `lunar_date` | bool | Show the lunisolar date under the Gregorian one, e.g. `LUNAR 13/9 · YEAR OF THE HORSE`, or `13/9 ÂM LỊCH · BÍNH NGỌ` in Vietnamese; a leap month is marked. Off by default |
 | `dashboard` | bool | smtv-home fork only. Weather, lunar calendar and price cards between the clock row and the dock title, sized to the room the layout leaves (hidden when there is too little). Off by default. Phase B shows placeholder numbers |
 | `design_frame` | bool | smtv-home fork only. Lays the header, the dashboard cards and a six-tile dock out on the reference design's coordinates (`DesignFrame`, a 2000x1125 mock-up scaled to the screen width). Use with `dashboard`, `columns: 6`, `rows_below_dock: 0`. Off by default; positions are calibrated against a real TV screenshot |
+| `design_profile` | string | smtv-home fork only, with `design_frame`. Which reference design to lay out: `crimson` (default) or `aurora` (glass tiles with icon and name inside, cyan focus ring, page dots, sentence-case header; use with `dock_title: false`, `lunar_date: true`) |
+| `tagline` | string | smtv-home fork only, `design_profile: aurora`. A short line under the header; empty hides it |
+| `corner_bottom` | string | smtv-home fork only, `design_profile: aurora`. Small muted text at the bottom-left corner; empty hides it |
+| `corner_right` | string | smtv-home fork only, `design_profile: aurora`. Small muted text at the bottom-right corner; empty hides it |
 | `lunar_utc_offset` | 0 to 14 | Hours east of UTC the lunar calendar is computed for: `7` is the Vietnamese calendar, `8` the Chinese one; they differ by a day now and then (and by a month in 1985). Unset: 7 when the TV is in Vietnamese, 8 otherwise |
 | `greeting_name` | string | A name after the greeting, e.g. `"Mr. Trịnh"` for GOOD MORNING, MR. TRỊNH; empty for the greeting alone |
 | `show_greeting` | bool | The greeting above the clock (`true` by default); `false` hides it |

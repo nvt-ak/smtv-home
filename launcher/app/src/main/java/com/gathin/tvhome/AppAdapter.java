@@ -433,7 +433,27 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             iconLp.bottomMargin = 0;
             icon.setLayoutParams(iconLp);
         }
+        if (glassMode()) {
+            // Aurora glass tile: the app's icon with its name inside, on a translucent card with a cyan focus ring.
+            card.setBackgroundResource(R.drawable.tile_glass_bg);
+            View icon = v.findViewById(R.id.icon);
+            FrameLayout.LayoutParams iconLp = (FrameLayout.LayoutParams) icon.getLayoutParams();
+            iconLp.width = iconLp.height = Math.round(h * 0.42f);
+            iconLp.gravity = android.view.Gravity.CENTER_HORIZONTAL | android.view.Gravity.TOP;
+            iconLp.topMargin = Math.round(h * 0.16f);
+            iconLp.bottomMargin = 0;
+            icon.setLayoutParams(iconLp);
+            TextView label = v.findViewById(R.id.label);
+            label.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, h * 0.105f);
+            label.setPadding(label.getPaddingLeft(), 0, label.getPaddingRight(), Math.round(h * 0.13f));
+            name.setVisibility(View.GONE);
+        }
         return new Holder(v, listener, animations, advancedEffects, reducedMotion, restNameAlpha, focusOvershoot);
+    }
+
+    /** True for the Aurora look: glass tiles with the icon and name inside (DesignFrame.Profile.glassTiles). */
+    static boolean glassMode() {
+        return frame != null && frame.glassTiles();
     }
 
     @Override
@@ -458,7 +478,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         // The dock has no labels, unless always_show_names asks for them (DockDecoration then makes room in the band).
         // In a single row every tile is the dock's kind: the big title above names it.
         boolean dockKind = dockRow && (singleRow || position < dockSize);
-        h.name.setVisibility(dockKind && restNameAlpha == 0f ? View.INVISIBLE : View.VISIBLE);
+        h.name.setVisibility(glassMode() ? View.GONE : dockKind && restNameAlpha == 0f ? View.INVISIBLE : View.VISIBLE);
         boolean focused = h.card.isFocused();   // a rebind after reload() can hit the focused tile
         h.name.setAlpha(focused ? 1f : restNameAlpha);
         h.card.setScaleX(focused && animations ? focusScale() : 1f);
@@ -474,7 +494,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             if (e.backdrop == null) e.backdrop = backdrop(e.icon, ambientColorAt(position));
             h.card.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, e.backdrop));
         }
-        if (e.banner != null) {
+        if (glassMode()) h.card.setBackground(h.cardBackground);
+        if (e.banner != null && !glassMode()) {
             h.banner.setImageDrawable(e.banner);
             h.banner.setVisibility(View.VISIBLE);
             h.icon.setVisibility(View.GONE);
@@ -485,7 +506,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             h.icon.setImageDrawable(e.icon);
             h.icon.setVisibility(View.VISIBLE);
             h.label.setText(e.label);
-            h.label.setVisibility(uniformTiles ? View.GONE : View.VISIBLE);
+            h.label.setVisibility(uniformTiles && !glassMode() ? View.GONE : View.VISIBLE);
         }
         h.card.setOnClickListener(v -> launch(e));
         h.card.setOnLongClickListener(v -> {
@@ -649,6 +670,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     float focusScale() {
+        if (glassMode()) return animations ? 1.03f : 1f;
         return !animations ? 1f : advancedEffects ? 1.12f : 1.10f;
     }
 

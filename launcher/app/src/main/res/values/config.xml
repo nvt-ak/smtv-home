@@ -210,6 +210,10 @@
     <!-- smtv-home fork: lay the header, the dashboard cards and the dock out on the reference design's
          coordinates (DesignFrame), scaled to the screen width. config.json design_frame. Off by default. -->
     <bool name="design_frame">false</bool>
+    <string name="design_profile" translatable="false">crimson</string>
+    <string name="tagline" translatable="false"></string>
+    <string name="corner_right" translatable="false"></string>
+    <string name="corner_bottom" translatable="false"></string>
 
     <!-- A name after the greeting: "Mr. Trịnh" shows GOOD MORNING, MR. TRỊNH. Empty: the greeting alone. -->
     <string name="greeting_name" translatable="false"></string>

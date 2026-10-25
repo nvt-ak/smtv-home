@@ -25,6 +25,7 @@ import android.graphics.Paint;
 import android.graphics.RadialGradient;
 import android.graphics.Rect;
 import android.graphics.Shader;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -482,13 +483,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         lunarDate = findViewById(R.id.lunarDate);
         dashboardView = findViewById(R.id.dashboard);
         dashboardOn = cfg.dashboard;
-        frame = cfg.designFrame ? new DesignFrame(getResources().getDisplayMetrics().widthPixels) : null;
+        frame = cfg.designFrame ? new DesignFrame(getResources().getDisplayMetrics().widthPixels, DesignFrame.profile(cfg.designProfile)) : null;
         AppAdapter.frame = frame;
         if (frame != null) {
             View column = findViewById(R.id.column);
-            column.setPadding(frame.px(DesignFrame.CONTENT_LEFT), frame.px(DesignFrame.HEADER_TOP),
-                    frame.px(DesignFrame.W - DesignFrame.CONTENT_RIGHT), column.getPaddingBottom());
-            if (dashboardOn) dashboardView.setCards(DesignFrame.CARD_WIDTHS, DesignFrame.CARD_GAP);
+            column.setPadding(frame.contentLeft(), frame.headerTop(), frame.contentRightInset(), column.getPaddingBottom());
+            if (dashboardOn) dashboardView.setCards(frame.cardWidths(), frame.cardGap());
+            if (!frame.hasTitle()) hero.setVisibility(View.GONE);
+            if (frame.glassTiles()) setUpAuroraChrome(cfg);
         }
         lunar = cfg.lunarDate;
         lunarOffset = Lunar.offsetFor(cfg.lunarUtcOffset, Locale.getDefault());
@@ -510,12 +512,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // The column already pads the content to the design's left edge; the tile row starts further out, so pull
             // the grid's wrapper out by the difference instead of padding the grid on top of the column padding.
             LinearLayout.LayoutParams wlp = (LinearLayout.LayoutParams) ((View) grid.getParent()).getLayoutParams();
-            wlp.setMarginStart(frame.gridSidePadding() - frame.px(DesignFrame.CONTENT_LEFT));
-            wlp.setMarginEnd(frame.gridSidePadding() - frame.px(DesignFrame.W - DesignFrame.CONTENT_RIGHT));
+            wlp.setMarginStart(frame.gridSidePadding() - frame.contentLeft());
+            wlp.setMarginEnd(frame.gridSidePadding() - frame.contentRightInset());
             ((View) grid.getParent()).setLayoutParams(wlp);
             // No side padding either: the six cells must span the wrapper exactly so tile 1 lands on the design's edge.
             grid.setPadding(0, grid.getPaddingTop(), 0, grid.getPaddingBottom());
-            ((ViewGroup.MarginLayoutParams) hero.getLayoutParams()).setMarginStart(frame.px(DesignFrame.CONTENT_LEFT));
+            ((ViewGroup.MarginLayoutParams) hero.getLayoutParams()).setMarginStart(frame.contentLeft());
         }
         rtlAppGrid = getResources().getBoolean(R.bool.rtl_app_grid);
         // Mirror only the app grid; the header and other locales keep their own layouts.
@@ -1612,6 +1614,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     public void onTileFocused(int position, View card) {
         lastFocused = position;
         lastFocusedKey = adapter.keyAt(position);
+        updatePageDots(position);
         // Focus restored before the first layout (cold start): the tile has no size yet, and the glass
         // would be sized to 2*pad. Run again once the tile is laid out.
         if (card.getWidth() == 0) {
@@ -1705,6 +1708,78 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (!glassShown || card.getWidth() != glassCardW || glass.getWidth() != w || glass.getHeight() != h) {
             onTileFocused(pos, card);
         }
+    }
+
+    // ---- Aurora look (design_profile aurora) -----------------------------------------------------
+
+    private PageDotsView pageDots;
+
+    /** Restyles the header and adds the tagline, the two corner texts and the page dots of the Aurora design. */
+    private void setUpAuroraChrome(Config cfg) {
+        greeting.setVisibility(View.GONE);
+        TextView clockView = findViewById(R.id.clock);
+        clockView.setTypeface(Typeface.create(clockView.getTypeface(), Typeface.BOLD));
+        clockView.setTextSize(58f);
+        clockView.setLetterSpacing(-0.02f);
+        View divider = findViewById(R.id.clockDivider);
+        divider.setBackgroundColor(0xFF74E5F4);
+        ViewGroup.LayoutParams dlp = divider.getLayoutParams();
+        dlp.width = Math.round(2 * density);
+        dlp.height = Math.round(44 * density);
+        divider.setLayoutParams(dlp);
+        // Sentence-case date ("Thứ Bảy, 25 tháng 10") instead of the shouted, spaced-out default.
+        android.widget.TextClock date = findViewById(R.id.date);
+        String pattern = android.text.format.DateFormat.getBestDateTimePattern(Locale.getDefault(), "EEEEMMMMd");
+        date.setFormat12Hour(pattern);
+        date.setFormat24Hour(pattern);
+        date.setAllCaps(false);
+        date.setLetterSpacing(0f);
+        date.setTextSize(22f);
+        date.setTextColor(0xFFF5FBFC);
+        date.setTypeface(Typeface.create(date.getTypeface(), Typeface.BOLD));
+        lunarDate.setAllCaps(false);
+        lunarDate.setLetterSpacing(0f);
+        lunarDate.setTextSize(15f);
+        lunarDate.setTextColor(0xFFB9CBD0);
+        lunarDate.setPadding(0, 0, 0, 0);
+
+        int muted = 0xFFB9CBD0;
+        addAuroraText(cfg.tagline, frame.contentLeft(), frame.px(236f), android.view.Gravity.LEFT, 15f, muted);
+        addAuroraText(cfg.cornerBottom, frame.contentLeft(), frame.px(1084f), android.view.Gravity.LEFT, 12f, 0x99B9CBD0);
+        addAuroraText(cfg.cornerRight, frame.contentRightInset(), frame.px(1084f), android.view.Gravity.RIGHT, 12f, 0x99B9CBD0);
+
+        pageDots = new PageDotsView(this);
+        pageDots.set(1, 0);
+        FrameLayout.LayoutParams plp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.round(16 * density));
+        plp.gravity = android.view.Gravity.TOP;
+        plp.topMargin = frame.dotsY() - plp.height / 2;
+        root.addView(pageDots, plp);
+        // The slab highlight is replaced by each glass tile's own focus ring.
+        glass.setVisibility(View.GONE);
+    }
+
+    private void addAuroraText(String text, int inset, int top, int gravity, float sp, int color) {
+        if (text == null || text.isEmpty()) return;
+        TextView t = new TextView(this);
+        t.setText(text);
+        t.setTextSize(sp);
+        t.setTextColor(color);
+        t.setSingleLine(true);
+        t.setFocusable(false);
+        t.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.gravity = android.view.Gravity.TOP | gravity;
+        lp.topMargin = top;
+        if (gravity == android.view.Gravity.RIGHT) lp.rightMargin = inset;
+        else lp.leftMargin = inset;
+        root.addView(t, lp);
+    }
+
+    /** Dots under the Aurora tile row: one per screenful of tiles, the focused tile's page lit. */
+    private void updatePageDots(int position) {
+        if (pageDots == null) return;
+        int per = Math.max(1, DesignFrame.TILES);
+        pageDots.set((adapter.getItemCount() + per - 1) / per, position / per);
     }
 
     // ---- dashboard -------------------------------------------------------------------------------

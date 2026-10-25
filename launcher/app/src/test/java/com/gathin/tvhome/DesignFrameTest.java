@@ -1,11 +1,14 @@
 package com.gathin.tvhome;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
 public class DesignFrameTest {
+
+    private static final DesignFrame.Profile[] PROFILES = {DesignFrame.CRIMSON, DesignFrame.AURORA};
 
     @Test
     public void scalesFromTheScreenWidth() {
@@ -15,42 +18,65 @@ public class DesignFrameTest {
     }
 
     @Test
+    public void profileNamesResolve() {
+        assertSame(DesignFrame.AURORA, DesignFrame.profile("aurora"));
+        assertSame(DesignFrame.AURORA, DesignFrame.profile(" Aurora "));
+        assertSame(DesignFrame.CRIMSON, DesignFrame.profile(""));
+        assertSame(DesignFrame.CRIMSON, DesignFrame.profile(null));
+        assertSame(DesignFrame.CRIMSON, DesignFrame.profile("anything else"));
+    }
+
+    @Test
     public void cardsFillTheirBoxExactly() {
-        float sum = DesignFrame.CARD_GAP * (DesignFrame.CARD_WIDTHS.length - 1);
-        for (float w : DesignFrame.CARD_WIDTHS) sum += w;
-        assertEquals(DesignFrame.CARDS_RIGHT - DesignFrame.CARDS_LEFT, sum, 1e-3f);
+        for (DesignFrame.Profile p : PROFILES) {
+            float sum = p.cardGap * (p.cardWidths.length - 1);
+            for (float w : p.cardWidths) sum += w;
+            assertEquals(p.name, p.cardsRight - p.cardsLeft, sum, 1e-3f);
+        }
     }
 
     @Test
     public void tilesStopAtTheContentEdge() {
-        float last = DesignFrame.TILES_LEFT + DesignFrame.TILES * DesignFrame.TILE_W
-                + (DesignFrame.TILES - 1) * DesignFrame.TILE_GAP;
-        assertEquals(DesignFrame.CONTENT_RIGHT, last, 1.5f);
+        for (DesignFrame.Profile p : PROFILES) {
+            float last = p.tilesLeft + DesignFrame.TILES * p.tileW + (DesignFrame.TILES - 1) * p.tileGap;
+            assertEquals(p.name, p.contentRight, last, 1.5f);
+        }
     }
 
     @Test
     public void tileRowSitsBelowTheCardsAndTheTitle() {
-        assertTrue(DesignFrame.TITLE_TOP > DesignFrame.CARDS_BOTTOM);
-        assertTrue(DesignFrame.TILE_TOP > DesignFrame.TITLE_TOP);
-        assertTrue(DesignFrame.TILE_TOP + DesignFrame.TILE_H < DesignFrame.H);
+        for (DesignFrame.Profile p : PROFILES) {
+            if (p.titleTop > 0f) {
+                assertTrue(p.name, p.titleTop > p.cardsBottom);
+                assertTrue(p.name, p.tileTop > p.titleTop);
+            } else {
+                assertTrue(p.name, p.tileTop > p.cardsBottom);
+            }
+            assertTrue(p.name, p.tileTop + p.tileH < DesignFrame.H);
+            if (p.dotsY > 0f) assertTrue(p.name, p.dotsY > p.tileTop + p.tileH);
+        }
     }
 
     @Test
     public void gridCellsPutTheFirstTileAtItsLeftEdge() {
-        DesignFrame f = new DesignFrame(1920);
-        // The tile is centred in its cell, so it starts (cell - tile) / 2 after the grid padding.
-        int first = f.gridSidePadding() + (f.cellWidth() - f.tileWidth()) / 2;
-        assertEquals(f.tileLeft(0), first, 1);
-        // The last tile ends where the sixth cell ends, less the same half gap.
-        int lastRight = f.gridSidePadding() + f.cellWidth() * DesignFrame.TILES - (f.cellWidth() - f.tileWidth()) / 2;
-        assertEquals(f.tileLeft(5) + f.tileWidth(), lastRight, 2);
+        for (DesignFrame.Profile p : PROFILES) {
+            DesignFrame f = new DesignFrame(1920, p);
+            // The tile is centred in its cell, so it starts (cell - tile) / 2 after the grid padding.
+            int first = f.gridSidePadding() + (f.cellWidth() - f.tileWidth()) / 2;
+            assertEquals(p.name, f.tileLeft(0), first, 1);
+            // The last tile ends where the sixth cell ends, less the same half gap.
+            int lastRight = f.gridSidePadding() + f.cellWidth() * DesignFrame.TILES - (f.cellWidth() - f.tileWidth()) / 2;
+            assertEquals(p.name, f.tileLeft(5) + f.tileWidth(), lastRight, 2);
+        }
     }
 
     @Test
     public void sameFractionsAtEveryResolution() {
-        DesignFrame hd = new DesignFrame(1280);
-        DesignFrame fhd = new DesignFrame(1920);
-        assertEquals((float) hd.cardsTop() / hd.px(DesignFrame.H), (float) fhd.cardsTop() / fhd.px(DesignFrame.H), 0.002f);
-        assertEquals((float) hd.tileTop() / hd.px(DesignFrame.H), (float) fhd.tileTop() / fhd.px(DesignFrame.H), 0.002f);
+        for (DesignFrame.Profile p : PROFILES) {
+            DesignFrame hd = new DesignFrame(1280, p);
+            DesignFrame fhd = new DesignFrame(1920, p);
+            assertEquals(p.name, (float) hd.cardsTop() / hd.px(DesignFrame.H), (float) fhd.cardsTop() / fhd.px(DesignFrame.H), 0.002f);
+            assertEquals(p.name, (float) hd.tileTop() / hd.px(DesignFrame.H), (float) fhd.tileTop() / fhd.px(DesignFrame.H), 0.002f);
+        }
     }
 }
