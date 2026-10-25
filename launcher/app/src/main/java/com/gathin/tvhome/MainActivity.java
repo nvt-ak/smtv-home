@@ -506,7 +506,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         hiddenApps = new HashSet<>(cfg.hiddenApps);
 
         grid = findViewById(R.id.grid);
-        if (frame != null) grid.setPadding(frame.gridSidePadding(), grid.getPaddingTop(), frame.gridSidePadding(), grid.getPaddingBottom());
+        if (frame != null) {
+            // The column already pads the content to the design's left edge; the tile row starts further out, so pull
+            // the grid's wrapper out by the difference instead of padding the grid on top of the column padding.
+            LinearLayout.LayoutParams wlp = (LinearLayout.LayoutParams) ((View) grid.getParent()).getLayoutParams();
+            wlp.setMarginStart(frame.gridSidePadding() - frame.px(DesignFrame.CONTENT_LEFT));
+            wlp.setMarginEnd(frame.gridSidePadding() - frame.px(DesignFrame.W - DesignFrame.CONTENT_RIGHT));
+            ((View) grid.getParent()).setLayoutParams(wlp);
+        }
         rtlAppGrid = getResources().getBoolean(R.bool.rtl_app_grid);
         // Mirror only the app grid; the header and other locales keep their own layouts.
         // single_row: one span laid out sideways, so the same adapter, glass and dock band serve a scrolling row.
@@ -1714,14 +1721,19 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // Design frame: the cards sit at the mock-up's own box, whatever the flow layout leaves.
             dashboardView.post(() -> {
                 android.widget.FrameLayout.LayoutParams lp = (android.widget.FrameLayout.LayoutParams) dashboardView.getLayoutParams();
-                lp.gravity = android.view.Gravity.TOP | android.view.Gravity.LEFT;
-                lp.leftMargin = frame.cardsLeft();
-                lp.topMargin = frame.cardsTop();
-                lp.rightMargin = 0;
-                lp.width = frame.cardsWidth();
-                lp.height = frame.cardsHeight();
-                dashboardView.setLayoutParams(lp);
-                dashboardView.setVisibility(View.VISIBLE);
+                // This runs from the grid's layout listener: touching the params every time would request another
+                // layout pass each time, forever. Only change them when the box is not already there.
+                if (lp.leftMargin != frame.cardsLeft() || lp.topMargin != frame.cardsTop()
+                        || lp.width != frame.cardsWidth() || lp.height != frame.cardsHeight()) {
+                    lp.gravity = android.view.Gravity.TOP | android.view.Gravity.LEFT;
+                    lp.leftMargin = frame.cardsLeft();
+                    lp.topMargin = frame.cardsTop();
+                    lp.rightMargin = 0;
+                    lp.width = frame.cardsWidth();
+                    lp.height = frame.cardsHeight();
+                    dashboardView.setLayoutParams(lp);
+                }
+                if (dashboardView.getVisibility() != View.VISIBLE) dashboardView.setVisibility(View.VISIBLE);
             });
             return;
         }
