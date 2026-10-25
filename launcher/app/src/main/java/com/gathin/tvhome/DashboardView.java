@@ -22,7 +22,7 @@ import android.view.View;
  * Phase B: the numbers below are placeholders. Phase C replaces them with fetched data and the offline lunar
  * calendar.
  */
-final class DashboardView extends View {
+public final class DashboardView extends View {
 
     /** Below this height the cards would not fit even the title and one row, so the dashboard hides itself. */
     static final int MIN_HEIGHT_DP = 150;
@@ -49,9 +49,20 @@ final class DashboardView extends View {
     private Typeface light;
     private Typeface medium;
 
+    /** The one LayoutInflater uses: it looks up a public (Context, AttributeSet) constructor by reflection. */
+    public DashboardView(Context ctx, android.util.AttributeSet attrs) {
+        super(ctx, attrs);
+        d = ctx.getResources().getDisplayMetrics().density;
+        init(ctx);
+    }
+
     DashboardView(Context ctx) {
         super(ctx);
         d = ctx.getResources().getDisplayMetrics().density;
+        init(ctx);
+    }
+
+    private void init(Context ctx) {
         setFocusable(false);
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         fill.setColor(0xB8180F14);
