@@ -1,0 +1,81 @@
+name: Build smtv-home APK
+
+# Builds the release APK on every push to smtv-main and publishes it to a rolling prerelease.
+# Optional secret SMTV_KEYSTORE_B64 (base64 of a debug-style keystore, alias androiddebugkey,
+# password android) keeps the signature stable, so a new build installs over the previous one.
+
+on:
+  push:
+    branches: [smtv-main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Accept Android SDK licenses
+        run: |
+          SDKM=$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -n 1)
+          yes | "$SDKM" --licenses > /dev/null || true
+
+      - name: Restore signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.SMTV_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            mkdir -p ~/.android
+            echo "$KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
+            echo "Using the stored keystore"
+          else
+            echo "No stored keystore: this build gets a fresh debug key"
+          fi
+
+      - name: Unit tests
+        working-directory: launcher
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          chmod +x gradlew
+          ./gradlew testReleaseUnitTest -q --console=plain
+
+      - name: Build release APK
+        working-directory: launcher
+        run: ./gradlew assembleRelease -q --console=plain
+
+      - name: Verify package name
+        run: |
+          APK=launcher/app/build/outputs/apk/release/app-release.apk
+          AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt | tail -n 1)
+          "$AAPT" dump badging "$APK" | grep -q "package: name='com.smtv_manager.home'"
+          stat -c 'APK size: %s bytes' "$APK"
+
+      - name: Prepare assets
+        run: |
+          mkdir out
+          cp launcher/app/build/outputs/apk/release/app-release.apk out/smtv-home.apk
+          (cd out && sha256sum smtv-home.apk > smtv-home.apk.sha256 && cat smtv-home.apk.sha256)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smtv-home-apk
+          path: out/*
+
+      - name: Publish rolling prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+        run: |
+          NOTES="Build of smtv-main @ $SHA. Fork of Gathin23/cleanyourtv (MIT)."
+          gh release view smtv-home-latest >/dev/null 2>&1 \
+            && gh release edit smtv-home-latest --notes "$NOTES" \
+            || gh release create smtv-home-latest --title "smtv-home (latest build)" --notes "$NOTES" --prerelease
+          gh release upload smtv-home-latest out/smtv-home.apk out/smtv-home.apk.sha256 --clobber
