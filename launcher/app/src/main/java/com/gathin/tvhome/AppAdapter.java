@@ -296,7 +296,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             if (!seen.add(pkg + '\n' + label)) continue;
             Drawable banner = null;
             // uniform_tiles draws the icon, so an app's banner is never loaded. A module card keeps its banner.
-            if (!(uniformTiles && card == null)) {
+            if (!((uniformTiles || glassMode()) && card == null)) {
                 banner = bundledBanner(appBanners.get(pkg));
                 if (banner == null) banner = loadBanner(pm, ri);
             }
@@ -495,7 +495,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             h.card.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, e.backdrop));
         }
         if (glassMode()) h.card.setBackground(h.cardBackground);
-        if (e.banner != null && !glassMode()) {
+        if (e.banner != null && (!glassMode() || e.icon == null)) {
             h.banner.setImageDrawable(e.banner);
             h.banner.setVisibility(View.VISIBLE);
             h.icon.setVisibility(View.GONE);
