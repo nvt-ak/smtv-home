@@ -513,6 +513,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             wlp.setMarginStart(frame.gridSidePadding() - frame.px(DesignFrame.CONTENT_LEFT));
             wlp.setMarginEnd(frame.gridSidePadding() - frame.px(DesignFrame.W - DesignFrame.CONTENT_RIGHT));
             ((View) grid.getParent()).setLayoutParams(wlp);
+            // No side padding either: the six cells must span the wrapper exactly so tile 1 lands on the design's edge.
+            grid.setPadding(0, grid.getPaddingTop(), 0, grid.getPaddingBottom());
+            ((ViewGroup.MarginLayoutParams) hero.getLayoutParams()).setMarginStart(frame.px(DesignFrame.CONTENT_LEFT));
         }
         rtlAppGrid = getResources().getBoolean(R.bool.rtl_app_grid);
         // Mirror only the app grid; the header and other locales keep their own layouts.
@@ -1773,7 +1776,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         String label = adapter.labelAt(position);
         int color = adapter.ambientColorAt(position);
         float y = frame != null ? frame.titleTop() : dockTopInRoot - 14 * density - 26 * density - hero.getHeight();
-        boolean changed = !label.contentEquals(heroName.getText());
+        boolean changed = !(frame != null ? heroName.getText().toString().startsWith(label + "  —") : label.contentEquals(heroName.getText()));
         if (cinematic && heroArtAlpha > 0f) showHeroArt(position);
 
         if (!animations || reducedMotion) {
@@ -1829,6 +1832,20 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** The shelf's text for this dock app: its name and, on the cinematic shelf, "Last opened" and the dots. */
     private void fillHero(int position, String label) {
+        if (frame != null) {
+            // Design frame: one small line above the tiles, "<app> — Nhấn OK để mở", the dash in the accent colour.
+            String tail = "  —  Nhấn OK để mở";
+            android.text.SpannableString line = new android.text.SpannableString(label + tail);
+            int dash = label.length() + 2;
+            line.setSpan(new android.text.style.ForegroundColorSpan(0xFFFF4B4B), dash, dash + 1,
+                    android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            heroName.setText(line);
+            heroName.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f);
+            heroName.setLetterSpacing(0f);
+            heroMeta.setVisibility(View.GONE);
+            heroDots.setVisibility(View.GONE);
+            return;
+        }
         heroName.setText(label);
         if (!cinematic) return;
         updateHeroMeta(position);

@@ -253,14 +253,20 @@ public final class DashboardView extends View {
                 y += 8 * d;
                 if (y + rowH > h - 8 * d) break;
             }
-            style(regular, 16, i >= 2 ? TEXT : MUTED);
-            put(c, rows[i][0], pad, y + 26 * d, w * 0.55f, false);
+            // Price columns first (right-aligned), then the label gets only what is left of the row.
             style(medium, 17, i >= 2 ? GREEN : TEXT);
-            put(c, rows[i][2], w - pad, y + 26 * d, w * 0.3f, true);
+            float sellW = text.measureText(rows[i][2]);
+            float labelEnd = w - pad - sellW - 12 * d;
             if (!rows[i][1].isEmpty()) {
                 style(regular, 16, MUTED);
-                put(c, rows[i][1], w - pad - 84 * d, y + 26 * d, w * 0.25f, true);
+                float buyRight = w - pad - Math.max(sellW, 56 * d) - 16 * d;
+                put(c, rows[i][1], buyRight, y + 26 * d, w * 0.25f, true);
+                labelEnd = buyRight - text.measureText(rows[i][1]) - 12 * d;
             }
+            style(medium, 17, i >= 2 ? GREEN : TEXT);
+            put(c, rows[i][2], w - pad, y + 26 * d, w * 0.3f, true);
+            style(regular, 16, i >= 2 ? TEXT : MUTED);
+            put(c, rows[i][0], pad, y + 26 * d, Math.max(0f, labelEnd - pad), false);
             y += rowH;
         }
     }
