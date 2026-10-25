@@ -3,7 +3,6 @@ package com.gathin.tvhome;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.RadialGradient;
 import android.graphics.RectF;
 import android.graphics.Shader;
@@ -23,10 +22,8 @@ final class AuroraCards {
 
     private static final int TEXT = 0xFFF5FBFC;
     private static final int MUTED = 0xFFB9CBD0;
-    private static final int CYAN = 0xFF74E5F4;
     private static final int GREEN = 0xFF4CE08A;
     private static final int RED = 0xFFFF5A56;
-    private static final int GOLD = 0xFFF2B93B;
 
     private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint border = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -34,13 +31,14 @@ final class AuroraCards {
     private final Paint shape = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final TextPaint text = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private final RectF r = new RectF();
-    private final Path path = new Path();
     private Typeface regular = Typeface.DEFAULT;
     private Typeface medium = Typeface.DEFAULT;
     private Typeface bold = Typeface.DEFAULT_BOLD;
     private float u = 1f;
+    private final Context ctx;
 
     AuroraCards(Context ctx) {
+        this.ctx = ctx;
         try {
             regular = ctx.getResources().getFont(R.font.outfit_regular);
             medium = ctx.getResources().getFont(R.font.outfit_medium);
@@ -95,7 +93,7 @@ final class AuroraCards {
         shape.setColor(0xFFE9EEF0);
         c.drawCircle(wm * 0.78f * u, 100 * u, 24 * u, shape);
 
-        cloud(c, 62, 56, 1.0f, true, false);
+        vec(c, R.drawable.ic_wx_rain, 62, 56, 56);
         put(c, "Thời tiết", 107, 48, 26, medium, TEXT, false, 300);
         put(c, "Hà Nội", 107, 78, 18, regular, MUTED, false, 300);
         put(c, "18°C", 36, 163, 62, bold, TEXT, false, 260);
@@ -112,30 +110,8 @@ final class AuroraCards {
         for (int i = 0; i < 5; i++) {
             float cx = 68 + span * i / 4f;
             put(c, hours[i], cx - 16, 310, 18, regular, MUTED, false, 60);
-            cloud(c, cx, 350, 0.62f, i < 3, i == 4);
+            vec(c, i < 3 ? R.drawable.ic_wx_rain : i == 3 ? R.drawable.ic_wx_cloud : R.drawable.ic_wx_partly, cx, 350, 46);
             put(c, temps[i], cx - 18, 406, 21, medium, TEXT, false, 60);
-        }
-    }
-
-    /** A small cloud (and optional rain or sun) centred at cx,cy, size 1 = 56 mock px wide. */
-    private void cloud(Canvas c, float cx, float cy, float s, boolean rain, boolean sun) {
-        if (sun) {
-            shape.setColor(0xFFFFC94D);
-            c.drawCircle((cx - 12 * s) * u, (cy - 12 * s) * u, 13 * s * u, shape);
-        }
-        shape.setColor(0xFFDCE8F2);
-        c.drawCircle((cx - 11 * s) * u, (cy + 2 * s) * u, 12 * s * u, shape);
-        c.drawCircle((cx + 2 * s) * u, (cy - 8 * s) * u, 16 * s * u, shape);
-        c.drawCircle((cx + 15 * s) * u, (cy + 1 * s) * u, 12 * s * u, shape);
-        r.set((cx - 23 * s) * u, (cy + 2 * s) * u, (cx + 27 * s) * u, (cy + 14 * s) * u);
-        c.drawRoundRect(r, 6 * s * u, 6 * s * u, shape);
-        if (rain) {
-            shape.setColor(0xFF6EC8FF);
-            for (int i = 0; i < 3; i++) {
-                float x = cx + (-12 + i * 12) * s;
-                r.set(x * u, (cy + 18 * s) * u, (x + 3 * s) * u, (cy + 27 * s) * u);
-                c.drawRoundRect(r, 2 * u, 2 * u, shape);
-            }
         }
     }
 
@@ -144,10 +120,7 @@ final class AuroraCards {
     private void lunar(Canvas c, float w) {
         float wm = w / u;
         // Crescent moon icon.
-        shape.setColor(TEXT);
-        c.drawCircle(54 * u, 47 * u, 16 * u, shape);
-        shape.setColor(0xFF10222B);
-        c.drawCircle(62 * u, 41 * u, 14 * u, shape);
+        vec(c, R.drawable.ic_moon, 54, 47, 38);
         put(c, "Lịch âm", 90, 54, 26, medium, TEXT, false, 240);
 
         // "Xem chi tiết >" chip.
@@ -182,12 +155,7 @@ final class AuroraCards {
     private void prices(Canvas c, float w) {
         float wm = w / u;
         // Bar-chart icon.
-        shape.setColor(TEXT);
-        float[][] bars = {{38, 70, 48}, {55, 56, 48}, {72, 38, 48}};
-        for (float[] b : bars) {
-            r.set(b[0] * u, b[1] * u, (b[0] + 10) * u, (b[2] + 12 + 10) * u);
-            c.drawRoundRect(r, 2 * u, 2 * u, shape);
-        }
+        vec(c, R.drawable.ic_chart, 56, 47, 38);
         put(c, "Giá cả hôm nay", 97, 54, 26, medium, TEXT, false, 270);
         put(c, "Cập nhật 20:24", wm - 36, 52, 17, regular, MUTED, true, 190);
         rule(c, 36, wm - 36, 88);
@@ -198,7 +166,7 @@ final class AuroraCards {
         String[] delta = {"▲ 500.000đ", "▲ 400.000đ", "▼ 200đ", "▼ 180đ"};
         for (int i = 0; i < 4; i++) {
             float cy = 121 + 89 * i;
-            icon(c, i, 66, cy);
+            vec(c, i == 0 ? R.drawable.ic_gold : i == 1 ? R.drawable.ic_ring : R.drawable.ic_fuel, 66, cy, 48);
             put(c, names[i], 126, cy + 7, 20, medium, TEXT, false, wm - 300);
             put(c, units[i], 126, cy + 35, 16, regular, MUTED, false, 160);
             put(c, price[i], wm - 36, cy + 7, 22, bold, TEXT, true, 190);
@@ -207,39 +175,12 @@ final class AuroraCards {
         }
     }
 
-    private void icon(Canvas c, int kind, float cx, float cy) {
-        if (kind == 0) {
-            shape.setColor(GOLD);
-            r.set((cx - 26) * u, (cy + 2) * u, (cx - 2) * u, (cy + 20) * u);
-            c.drawRoundRect(r, 3 * u, 3 * u, shape);
-            r.set((cx + 1) * u, (cy + 2) * u, (cx + 27) * u, (cy + 20) * u);
-            c.drawRoundRect(r, 3 * u, 3 * u, shape);
-            shape.setColor(0xFFFFD66B);
-            r.set((cx - 13) * u, (cy - 16) * u, (cx + 13) * u, (cy + 2) * u);
-            c.drawRoundRect(r, 3 * u, 3 * u, shape);
-        } else if (kind == 1) {
-            shape.setColor(GOLD);
-            r.set((cx - 26) * u, (cy - 12) * u, (cx + 26) * u, (cy + 16) * u);
-            c.drawOval(r, shape);
-            shape.setColor(0xFF10222B);
-            r.set((cx - 12) * u, (cy - 5) * u, (cx + 12) * u, (cy + 9) * u);
-            c.drawOval(r, shape);
-        } else {
-            shape.setColor(0xFFF5B83B);
-            r.set((cx - 18) * u, (cy - 24) * u, (cx + 10) * u, (cy + 24) * u);
-            c.drawRoundRect(r, 5 * u, 5 * u, shape);
-            shape.setColor(0xFF10222B);
-            r.set((cx - 12) * u, (cy - 17) * u, (cx + 4) * u, (cy - 4) * u);
-            c.drawRoundRect(r, 2 * u, 2 * u, shape);
-            shape.setStyle(Paint.Style.STROKE);
-            shape.setColor(0xFFF5B83B);
-            shape.setStrokeWidth(4 * u);
-            path.reset();
-            path.moveTo((cx + 10) * u, (cy - 10) * u);
-            path.lineTo((cx + 22) * u, (cy - 4) * u);
-            path.lineTo((cx + 22) * u, (cy + 14) * u);
-            c.drawPath(path, shape);
-            shape.setStyle(Paint.Style.FILL);
-        }
+    /** Draws a vector icon centred at cx,cy, size in mock px. */
+    private void vec(Canvas c, int res, float cx, float cy, float size) {
+        android.graphics.drawable.Drawable d = ctx.getDrawable(res);
+        if (d == null) return;
+        d.setBounds(Math.round((cx - size / 2) * u), Math.round((cy - size / 2) * u),
+                Math.round((cx + size / 2) * u), Math.round((cy + size / 2) * u));
+        d.draw(c);
     }
 }

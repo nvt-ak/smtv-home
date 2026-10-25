@@ -438,7 +438,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             card.setBackgroundResource(R.drawable.tile_glass_bg);
             View icon = v.findViewById(R.id.icon);
             FrameLayout.LayoutParams iconLp = (FrameLayout.LayoutParams) icon.getLayoutParams();
-            iconLp.width = iconLp.height = Math.round(h * 0.40f);
+            iconLp.width = iconLp.height = Math.round(h * 0.50f);
             iconLp.gravity = android.view.Gravity.CENTER_HORIZONTAL | android.view.Gravity.TOP;
             iconLp.topMargin = Math.round(h * 0.15f);
             iconLp.bottomMargin = 0;
@@ -449,6 +449,31 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             name.setVisibility(View.GONE);
         }
         return new Holder(v, listener, animations, advancedEffects, reducedMotion, restNameAlpha, focusOvershoot);
+    }
+
+    /**
+     * Aurora tile mark: an adaptive icon contributes only its foreground (the logo on a transparent layer, scaled up
+     * past the launcher mask's safe zone); a plain square icon is clipped to rounded corners instead of a hard square.
+     */
+    private static void setGlassIcon(ImageView view, Drawable icon) {
+        if (android.os.Build.VERSION.SDK_INT >= 26 && icon instanceof android.graphics.drawable.AdaptiveIconDrawable
+                && ((android.graphics.drawable.AdaptiveIconDrawable) icon).getForeground() != null) {
+            view.setImageDrawable(((android.graphics.drawable.AdaptiveIconDrawable) icon).getForeground());
+            view.setScaleX(1.5f);
+            view.setScaleY(1.5f);
+            view.setClipToOutline(false);
+            return;
+        }
+        view.setImageDrawable(icon);
+        view.setScaleX(0.8f);
+        view.setScaleY(0.8f);
+        view.setOutlineProvider(new ViewOutlineProvider() {
+            @Override
+            public void getOutline(View v, android.graphics.Outline outline) {
+                outline.setRoundRect(0, 0, v.getWidth(), v.getHeight(), v.getWidth() * 0.22f);
+            }
+        });
+        view.setClipToOutline(true);
     }
 
     /** True for the Aurora look: glass tiles with the icon and name inside (DesignFrame.Profile.glassTiles). */
@@ -503,7 +528,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         } else {
             h.banner.setImageDrawable(null);
             h.banner.setVisibility(View.GONE);
-            h.icon.setImageDrawable(e.icon);
+            if (glassMode()) setGlassIcon(h.icon, e.icon);
+            else h.icon.setImageDrawable(e.icon);
             h.icon.setVisibility(View.VISIBLE);
             h.label.setText(e.label);
             h.label.setVisibility(uniformTiles && !glassMode() ? View.GONE : View.VISIBLE);

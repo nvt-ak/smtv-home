@@ -9,3 +9,9 @@ Differences from upstream:
   Upstream deliberately has none, so this fork is not meant to be sent back as a pull request.
 
 The upstream licence stays in `LICENSE`. The original README is `README.md`.
+
+## Third-party artwork
+
+The Aurora cards use eight icons from [Fluent Emoji Flat](https://github.com/microsoft/fluentui-emoji) (MIT licence,
+Microsoft), converted to vector drawables in `launcher/app/src/main/res/drawable/ic_wx_*.xml`, `ic_moon.xml`,
+`ic_gold.xml`, `ic_ring.xml`, `ic_fuel.xml` and `ic_chart.xml`.
