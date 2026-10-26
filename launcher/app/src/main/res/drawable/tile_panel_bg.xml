@@ -10,7 +10,7 @@
                     <stroke android:width="3dp" android:color="#FFF5C26B" />
                 </shape>
             </item>
-            <item android:width="22dp" android:height="22dp" android:gravity="center_vertical|end" android:end="34dp"
+            <item android:width="18dp" android:height="18dp" android:gravity="center_vertical|end" android:end="16dp"
                 android:drawable="@drawable/ic_chevron_right" />
         </layer-list>
     </item>
