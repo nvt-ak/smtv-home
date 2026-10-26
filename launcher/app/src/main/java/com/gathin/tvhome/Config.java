@@ -100,6 +100,15 @@ final class Config {
     final String subline;
     /** Package to the small line under its name in the Hà Nội sidebar (config.json app_subtitles). */
     final Map<String, String> appSubtitles;
+    /**
+     * Widgets of the dashboard looks that config.json switched off with {@code "show_<name>": false}: weather, gold,
+     * fuel, prices, calendar, lunar_header, quote, footer. Everything not listed is shown.
+     */
+    final Set<String> hiddenWidgets;
+
+    /** The switchable widgets, each read as {@code show_<name>}; true (the default) shows it. */
+    private static final String[] WIDGET_KEYS = {"show_weather", "show_gold", "show_fuel", "show_prices", "show_calendar",
+            "show_lunar_header", "show_quote", "show_footer"};
     final double weatherLat, weatherLon;
     /** Name after the greeting ("Good morning, Mr. Trịnh"); empty for the greeting alone. */
     final String greetingName;
@@ -263,7 +272,7 @@ final class Config {
                    List<RaceWeekend.Race> raceCalendar, boolean cinematicHome, boolean ambientGlow, boolean appGlow, boolean fadeRows, int homeIdleClockMinutes,
                    boolean keyFilter, boolean dockGlass, String glowStyle, boolean wallpaperCaptions,
                    boolean handleViewInputs, boolean tileMenu, boolean dockEvenPadding, boolean cinematicDots, boolean cinematicWhiteFocus, boolean wifiStatusColor, int cinematicScrim, int cinematicArt,
-                   Map<String, Set<String>> wallpaperMoods, boolean gamepadPassthrough, boolean consumeVolumeKeys, boolean wifiStatusWarnings, List<String> topBarApps, boolean showGreeting, boolean headerWhite, boolean clockWallpaper, int clockWallpaperDim, boolean clockGlow, String glassStyle, boolean singleRow, boolean dockBandAll, boolean lunarDate, int lunarUtcOffset, boolean dashboard, boolean designFrame, String designProfile, String tagline, String cornerRight, String cornerBottom, String weatherCity, double weatherLat, double weatherLon, String subline, Map<String, String> appSubtitles) {
+                   Map<String, Set<String>> wallpaperMoods, boolean gamepadPassthrough, boolean consumeVolumeKeys, boolean wifiStatusWarnings, List<String> topBarApps, boolean showGreeting, boolean headerWhite, boolean clockWallpaper, int clockWallpaperDim, boolean clockGlow, String glassStyle, boolean singleRow, boolean dockBandAll, boolean lunarDate, int lunarUtcOffset, boolean dashboard, boolean designFrame, String designProfile, String tagline, String cornerRight, String cornerBottom, String weatherCity, double weatherLat, double weatherLon, String subline, Map<String, String> appSubtitles, Set<String> hiddenWidgets) {
         this.handleViewInputs = handleViewInputs;
         this.tileMenu = tileMenu;
         this.inputKeycodes = inputKeycodes;
@@ -302,6 +311,7 @@ final class Config {
         this.weatherCity = weatherCity;
         this.subline = subline;
         this.appSubtitles = Collections.unmodifiableMap(appSubtitles);
+        this.hiddenWidgets = Collections.unmodifiableSet(hiddenWidgets);
         this.weatherLat = weatherLat;
         this.weatherLon = weatherLon;
         this.greetingName = greetingName;
@@ -644,6 +654,10 @@ final class Config {
         Festival festival = json == null ? Festival.NONE : Festival.parse(string(json, "festival", ""),
                 string(json, "festival_until", ""), string(json, "greeting", ""), string(json, "accent_color", ""));
 
+        Set<String> hiddenWidgets = new java.util.HashSet<>();
+        if (json != null) {
+            for (String key : WIDGET_KEYS) if (!bool(json, key, true)) hiddenWidgets.add(key.substring("show_".length()));
+        }
         return new Config(dock, fillDock, hidden, libraryApps, liveTv, liveTvAction, liveTvInputId, packageMap(launchActions), packageMap(appLabels),
                 packageMap(appBanners), panelService,
                 panelAction, panelExtra, coocaaSources, inputAction, inputUriScheme,
@@ -652,7 +666,7 @@ final class Config {
                 Math.max(0, Math.min(100, skyIntensity)), settingsKeycodes, settingsKeyPanel, restoreKeyServices, wallpaperEnabled, wallpaper,
                 wallpapers, rotationMinutes, wallpaperDim, dockOpacity, wallpaperOrder, applied,
                 festival, inputKeycodes, appKeys, stockHomeRedirect, json == null ? Collections.emptyList() : raceCalendar(json), cinematic, ambientGlow, appGlow, fadeRows,
-                Math.max(0, idleClockMinutes), keyFilter, dockGlass, glowStyle, wallpaperCaptions, handleViewInputs, tileMenu, dockEvenPadding, cinematicDots, cinematicWhiteFocus, wifiStatusColor, cinematicScrim, cinematicArt, wallpaperMoods, gamepadPassthrough, consumeVolumeKeys, wifiStatusWarnings, topBarApps, showGreeting, headerWhite, clockWallpaper, Math.max(0, Math.min(90, clockWallpaperDim)), clockGlow, glassStyle, singleRow && dockRow, dockBandAll, lunar, lunarOffset, dashboard, designFrame, designProfile, tagline, cornerRight, cornerBottom, weatherCity, weatherLat, weatherLon, subline, packageMap(appSubtitles));
+                Math.max(0, idleClockMinutes), keyFilter, dockGlass, glowStyle, wallpaperCaptions, handleViewInputs, tileMenu, dockEvenPadding, cinematicDots, cinematicWhiteFocus, wifiStatusColor, cinematicScrim, cinematicArt, wallpaperMoods, gamepadPassthrough, consumeVolumeKeys, wifiStatusWarnings, topBarApps, showGreeting, headerWhite, clockWallpaper, Math.max(0, Math.min(90, clockWallpaperDim)), clockGlow, glassStyle, singleRow && dockRow, dockBandAll, lunar, lunarOffset, dashboard, designFrame, designProfile, tagline, cornerRight, cornerBottom, weatherCity, weatherLat, weatherLon, subline, packageMap(appSubtitles), hiddenWidgets);
     }
 
     /**

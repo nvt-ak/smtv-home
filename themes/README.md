@@ -51,6 +51,14 @@ A new key needs one there in the same pull request.
 | `launch_actions` | list of `"package=action"` | Tiles that open a screen of the app instead of its start screen; an action that no longer resolves opens the app normally (MagentaTV's guide: `com.telekom.onetv.tv.pl=com.telekom.onetv.tv.pl.action.PROGRAM_GUIDE`) |
 | `app_labels` | list of `"package=Name"` | A tile's name instead of the app's own (MagentaTV as `com.telekom.onetv.tv.pl=TV`) |
 | `app_subtitles` | list of `"package=Text"` | `hanoi2` look: the small line under an app's name in the sidebar (`com.netflix.ninja=Giải trí không giới hạn`) |
+| `show_weather` | bool | smtv-home fork only, with `dashboard`. `false` hides the weather card (Aurora, Hà Nội, `hanoi2`); the cards left share its room. Default `true` |
+| `show_gold` | bool | smtv-home fork only, `design_profile: hanoi2`. `false` hides the gold price card; a lone fuel card then takes the whole row. Default `true` |
+| `show_fuel` | bool | smtv-home fork only, `design_profile: hanoi2`. `false` hides the fuel price card. Default `true` |
+| `show_prices` | bool | smtv-home fork only. `false` hides the prices card of Aurora and Hà Nội, and both price cards of `hanoi2`. Default `true` |
+| `show_calendar` | bool | smtv-home fork only. `false` hides the lunar card (Aurora, Hà Nội) or the month card (`hanoi2`). Default `true` |
+| `show_lunar_header` | bool | smtv-home fork only, `design_profile: hanoi2`. `false` hides the lunar date and the Hoàng Đạo tag beside the clock. Default `true` |
+| `show_quote` | bool | smtv-home fork only. `false` hides `tagline` (and `subline` in Hà Nội). Default `true` |
+| `show_footer` | bool | smtv-home fork only. `false` hides `corner_bottom` and `corner_right`. Default `true` |
 | `app_banners` | list of `"package=banner_name"` | A tile's artwork from a `banner_*` drawable bundled with the launcher (`banner_tv`: magenta with the Live TV glyph) |
 | `input_action` | string | Action sent with an HDMI/AV row's channel URI when nothing handles the standard `VIEW` (XGIMI: `com.xgimi.action.hdmiPlayer`). Only a handler-less set gets here; any app that claims the channel MIME type takes the row instead, so check with `query-activities` ([#805](https://github.com/Gathin23/cleanyourtv/issues/805)) |
 | `input_uri_scheme` | string | Scheme an HDMI/AV row's passthrough URI is sent with instead of `content://`, with no MIME type (YaOS: `live-tv`, which its source player answers) |

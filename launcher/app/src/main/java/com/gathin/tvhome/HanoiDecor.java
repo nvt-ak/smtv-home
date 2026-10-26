@@ -29,6 +29,7 @@ final class HanoiDecor extends View {
     private final String quote;
     private final String foot;
     private final String footRight;
+    private final boolean showLunar;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final TextPaint text = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private final RectF r = new RectF();
@@ -40,12 +41,13 @@ final class HanoiDecor extends View {
     private LiveData live;
     private float s = 1f;
 
-    HanoiDecor(Context ctx, DesignFrame frame, String quote, String foot, String footRight) {
+    HanoiDecor(Context ctx, DesignFrame frame, String quote, String foot, String footRight, java.util.Set<String> hidden) {
         super(ctx);
         this.frame = frame;
-        this.quote = quote == null ? "" : quote;
-        this.foot = foot == null ? "" : foot;
-        this.footRight = footRight == null ? "" : footRight;
+        this.quote = quote == null || hidden.contains("quote") ? "" : quote;
+        this.foot = foot == null || hidden.contains("footer") ? "" : foot;
+        this.footRight = footRight == null || hidden.contains("footer") ? "" : footRight;
+        this.showLunar = !hidden.contains("lunar_header");
         setFocusable(false);
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         try {
@@ -181,6 +183,7 @@ final class HanoiDecor extends View {
                 + " Tháng " + (now.get(Calendar.MONTH) + 1) + ", " + now.get(Calendar.YEAR);
         put(c, date, 640, 198, 29, regular, 0xFFE8EEFA, Paint.Align.LEFT, 380);
 
+        if (!showLunar) return;
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(Math.max(1f, 2f * s));
         paint.setColor(0x55FFFFFF);

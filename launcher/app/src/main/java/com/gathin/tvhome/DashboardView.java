@@ -49,6 +49,7 @@ public final class DashboardView extends View {
     private HanoiCards hanoi;
     private HanoiRowCards hanoiRow;
     private LiveData live;
+    private java.util.Set<String> hidden = java.util.Collections.emptySet();
     private Typeface regular;
     private Typeface light;
     private Typeface medium;
@@ -117,6 +118,12 @@ public final class DashboardView extends View {
         invalidate();
     }
 
+    /** The widgets the theme switched off (Config.hiddenWidgets). */
+    void setHidden(java.util.Set<String> widgets) {
+        hidden = widgets;
+        invalidate();
+    }
+
     /** Switches to the Aurora card design (DesignFrame.Profile.glassTiles). */
     void setAurora(boolean on) {
         aurora = on ? new AuroraCards(getContext()) : null;
@@ -147,25 +154,34 @@ public final class DashboardView extends View {
         float h = getHeight();
         if (w <= 0 || h < MIN_HEIGHT_DP * d) return;
         if (hanoi != null) {
-            hanoi.drawAll(c, w, h, live);
+            hanoi.drawAll(c, w, h, live, hidden);
             return;
         }
-        float[] weights = widths != null ? widths : new float[] {1.5f, 1f, 1f};
+        float[] all = widths != null ? widths : new float[] {1.5f, 1f, 1f};
+        // The cards a theme switched off (show_weather, show_calendar, show_prices) leave their width to the others.
+        boolean[] show = {!hidden.contains("weather"), !hidden.contains("calendar"), !pricesHidden(hidden)};
         float total = 0;
-        for (float v : weights) total += v;
+        int count = 0;
+        for (int i = 0; i < 3; i++) {
+            if (!show[i]) continue;
+            total += all[i];
+            count++;
+        }
+        if (count == 0) return;
         float gap;
         float unit;
         if (widths != null) {
-            float whole = total + gapUnits * (weights.length - 1);
+            float whole = total + gapUnits * (count - 1);
             unit = w / whole;
             gap = gapUnits * unit;
         } else {
             gap = 16 * d;
-            unit = (w - 2 * gap) / total;
+            unit = (w - (count - 1) * gap) / total;
         }
         float x = 0;
         for (int i = 0; i < 3; i++) {
-            float cw = unit * weights[i];
+            if (!show[i]) continue;
+            float cw = unit * all[i];
             box.set(x, 0, x + cw, h);
             if (aurora != null || hanoiRow != null) {
                 c.save();
@@ -185,6 +201,11 @@ public final class DashboardView extends View {
             c.restore();
             x += cw + gap;
         }
+    }
+
+    /** The prices card has nothing to show when prices, or both gold and fuel, are switched off. */
+    static boolean pricesHidden(java.util.Set<String> hidden) {
+        return hidden.contains("prices") || (hidden.contains("gold") && hidden.contains("fuel"));
     }
 
     // ---- glass ---------------------------------------------------------------------------------

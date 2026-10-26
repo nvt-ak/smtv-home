@@ -491,6 +491,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             column.setPadding(frame.contentLeft(), frame.headerTop(), frame.contentRightInset(), column.getPaddingBottom());
             if (dashboardOn) {
                 dashboardView.setCards(frame.cardWidths(), frame.cardGap());
+                dashboardView.setHidden(cfg.hiddenWidgets);
                 if (frame.timeline()) dashboardView.setHanoi(true);
                 else if (frame.sidebar()) dashboardView.setHanoiRow(true);
                 else dashboardView.setAurora(frame.glassTiles());
@@ -1778,9 +1779,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         lunarDate.setPadding(0, 0, 0, 0);
 
         int muted = 0xFFB9CBD0;
-        addAuroraText(cfg.tagline, frame.contentLeft(), frame.px(236f), android.view.Gravity.LEFT, 17f, muted, 0.12f, false);
-        addAuroraText(cfg.cornerBottom, frame.contentLeft(), frame.px(1075f), android.view.Gravity.LEFT, 12f, 0x99B9CBD0, 0.2f, true);
-        addAuroraText(cfg.cornerRight, frame.contentRightInset(), frame.px(1075f), android.view.Gravity.RIGHT, 12f, 0x99B9CBD0, 0.2f, true);
+        if (!cfg.hiddenWidgets.contains("quote")) addAuroraText(cfg.tagline, frame.contentLeft(), frame.px(236f), android.view.Gravity.LEFT, 17f, muted, 0.12f, false);
+        if (!cfg.hiddenWidgets.contains("footer")) addAuroraText(cfg.cornerBottom, frame.contentLeft(), frame.px(1075f), android.view.Gravity.LEFT, 12f, 0x99B9CBD0, 0.2f, true);
+        if (!cfg.hiddenWidgets.contains("footer")) addAuroraText(cfg.cornerRight, frame.contentRightInset(), frame.px(1075f), android.view.Gravity.RIGHT, 12f, 0x99B9CBD0, 0.2f, true);
 
         pageDots = new PageDotsView(this);
         pageDots.set(1, 0);
@@ -1828,7 +1829,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
         String who = cfg.greetingName.isEmpty() ? "bạn" : cfg.greetingName;
         sidebarText("Chào " + who + "!", frame.px(511f), frame.px(80f), android.view.Gravity.LEFT, frame.px(54f), 0xFFFFFFFF, true, 0f, false);
-        sidebarText(cfg.tagline, frame.px(511f), frame.px(152f), android.view.Gravity.LEFT, frame.px(26f), 0xFF86AEDB, false, 0f, false);
+        if (!cfg.hiddenWidgets.contains("quote")) sidebarText(cfg.tagline, frame.px(511f), frame.px(152f), android.view.Gravity.LEFT, frame.px(26f), 0xFF86AEDB, false, 0f, false);
 
         LinearLayout clockRow = new LinearLayout(this);
         clockRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -1860,9 +1861,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         clp.topMargin = frame.px(62f);
         clp.rightMargin = frame.px(68f);
         root.addView(clockRow, clp);
-        sidebarText(cfg.subline, 0, frame.px(166f), android.view.Gravity.RIGHT, frame.px(23f), 0xFF9DB6E6, false, 0f, false);
+        if (!cfg.hiddenWidgets.contains("quote")) sidebarText(cfg.subline, 0, frame.px(166f), android.view.Gravity.RIGHT, frame.px(23f), 0xFF9DB6E6, false, 0f, false);
 
-        if (!cfg.cornerRight.isEmpty()) {
+        if (!cfg.cornerRight.isEmpty() && !cfg.hiddenWidgets.contains("footer")) {
             android.text.SpannableString s = new android.text.SpannableString(cfg.cornerRight);
             int nl = cfg.cornerRight.indexOf('\n');
             if (nl > 0) s.setSpan(new android.text.style.RelativeSizeSpan(1.3f), 0, nl, 0);
@@ -1875,7 +1876,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             rlp.topMargin = frame.px(424f);
             root.addView(rule, rlp);
         }
-        sidebarText(cfg.cornerBottom, frame.px(64f), frame.px(1112f), android.view.Gravity.LEFT | android.view.Gravity.BOTTOM, frame.px(17f), 0xFF7F93B8, false, 0.02f, false);
+        if (!cfg.hiddenWidgets.contains("footer")) sidebarText(cfg.cornerBottom, frame.px(64f), frame.px(1112f), android.view.Gravity.LEFT | android.view.Gravity.BOTTOM, frame.px(17f), 0xFF7F93B8, false, 0.02f, false);
         glass.setVisibility(View.GONE);
     }
 
@@ -1909,7 +1910,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** The Hà Nội look: the shade, timeline, header and quote (HanoiDecor), the app list on the left, three round buttons on top. */
     private void setUpSidebarChrome(Config cfg) {
         View column = findViewById(R.id.column);
-        hanoiDecor = new HanoiDecor(this, frame, cfg.tagline, cfg.cornerBottom.replace('\n', ' '), cfg.cornerRight.replace('\n', ' '));
+        hanoiDecor = new HanoiDecor(this, frame, cfg.tagline, cfg.cornerBottom.replace('\n', ' '), cfg.cornerRight.replace('\n', ' '), cfg.hiddenWidgets);
         hanoiDecor.setLive(liveData);
         root.addView(hanoiDecor, root.indexOfChild(column), new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));

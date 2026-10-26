@@ -61,19 +61,46 @@ final class HanoiCards {
         line.setStrokeCap(Paint.Cap.ROUND);
     }
 
-    /** Draws the whole column into a {@code w} x {@code h} view; the view keeps the column's aspect ratio. */
-    void drawAll(Canvas c, float w, float h, LiveData live) {
+    /**
+     * Draws the column into a {@code w} x {@code h} view. Widgets the theme switched off ({@code hidden}: weather, gold,
+     * fuel, calendar) leave no hole: the rest move up, and a lone gold or fuel card takes the whole row.
+     */
+    void drawAll(Canvas c, float w, float h, LiveData live, java.util.Set<String> hidden) {
         u = w / COLUMN_W;
         border.setStrokeWidth(Math.max(1f, 1.5f * u));
         line.setStrokeWidth(Math.max(1f, 1.5f * u));
-        card(c, 0, 0, 795, 213);
-        weather(c, live);
-        card(c, 0, 228, 388, 155);
-        price(c, 0, 228, R.drawable.ic_gold, "Giá vàng (SJC)", live == null || live.prices == null ? null : live.prices.rows[0], "đ/lượng");
-        card(c, 405, 228, 390, 155);
-        price(c, 405, 228, R.drawable.ic_fuel, "Giá xăng (RON 95-III)", live == null || live.prices == null ? null : live.prices.rows[2], "đ/lít");
-        card(c, 0, 398, 795, 349);
-        month(c, live);
+        float y = 0;
+        if (!hidden.contains("weather")) {
+            card(c, 0, y, 795, 213);
+            c.save();
+            c.translate(0, y * u);
+            weather(c, live);
+            c.restore();
+            y += 213 + 15;
+        }
+        boolean gold = !hidden.contains("gold") && !hidden.contains("prices");
+        boolean fuel = !hidden.contains("fuel") && !hidden.contains("prices");
+        if (gold || fuel) {
+            LiveData.Prices p = live == null ? null : live.prices;
+            float goldW = gold && fuel ? 388 : 795;
+            if (gold) {
+                card(c, 0, y, goldW, 155);
+                price(c, 0, y, R.drawable.ic_gold, "Giá vàng (SJC)", p == null ? null : p.rows[0], "đ/lượng");
+            }
+            if (fuel) {
+                float x = gold ? 405 : 0;
+                card(c, x, y, gold ? 390 : 795, 155);
+                price(c, x, y, R.drawable.ic_fuel, "Giá xăng (RON 95-III)", p == null ? null : p.rows[2], "đ/lít");
+            }
+            y += 155 + 15;
+        }
+        if (!hidden.contains("calendar")) {
+            card(c, 0, y, 795, 349);
+            c.save();
+            c.translate(0, y * u);
+            month(c, live);
+            c.restore();
+        }
     }
 
     private void card(Canvas c, float x, float y, float w, float h) {
@@ -248,7 +275,6 @@ final class HanoiCards {
 
     private void month(Canvas c, LiveData live) {
         c.save();
-        c.translate(0, 398 * u);
         Calendar now = Calendar.getInstance();
         int year = now.get(Calendar.YEAR), mon = now.get(Calendar.MONTH), today = now.get(Calendar.DAY_OF_MONTH);
         put(c, "Tháng " + (mon + 1) + ", " + year, 26, 49, 27, bold, TEXT, 440);
