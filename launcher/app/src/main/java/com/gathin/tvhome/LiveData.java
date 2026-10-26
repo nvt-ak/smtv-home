@@ -66,6 +66,10 @@ final class LiveData {
         String line1, line2, solar, canChi, hours1, hours2, next1, next2;
         /** The Hà Nội card's pieces: day number, month, weekday, day / month / year stem-branch, hours with their range. */
         String dayNum, month, weekday, dayName, monthName, yearName;
+        /** The month as in "27 tháng 3": the number (or Giêng / Chạp) with " nhuận" for a leap month. */
+        String monthShort = "";
+        /** True when the day is a hoàng đạo day (the day spirit is one of the six lucky ones). */
+        boolean auspicious;
         String[] hourRanges = new String[0];
         int dayKey;
     }
@@ -73,6 +77,8 @@ final class LiveData {
     volatile Weather weather;
     volatile Prices prices;
     volatile LunarCard lunar;
+    /** US AQI from Open-Meteo's air-quality API, or -1 when unknown. */
+    volatile int aqi = -1;
 
     private final Context ctx;
     private final SharedPreferences prefs;
@@ -94,9 +100,20 @@ final class LiveData {
             parseWeather(prefs.getString("weather", null), prefs.getLong("weather_at", 0));
             parseGold(prefs.getString("gold", null));
             parseFuel(prefs.getString("fuel", null), prefs.getLong("prices_at", 0));
+            parseAqi(prefs.getString("aqi", null));
         } catch (Exception ignored) {
             // A damaged cache is the same as none.
         }
+        // Offline and instant: the header shows the lunar date from the first frame.
+        lunar = computeLunar();
+    }
+
+    /** Recomputes the lunar card when the day has changed (cheap, offline); true when it did. */
+    boolean refreshLunar() {
+        LunarCard k = lunar;
+        if (k != null && k.dayKey == dayKey()) return false;
+        lunar = computeLunar();
+        return true;
     }
 
     /** Fetches whatever is stale, off the main thread, then runs {@code done} on it. */
@@ -157,6 +174,54 @@ final class LiveData {
         } catch (Exception ignored) {
             // Keep the cached numbers.
         }
+        try {
+            String raw = get("https://air-quality-api.open-meteo.com/v1/air-quality?latitude=" + lat + "&longitude=" + lon
+                    + "&current=us_aqi");
+            parseAqi(raw);
+            prefs.edit().putString("aqi", raw).apply();
+        } catch (Exception ignored) {
+            // Keep the cached number.
+        }
+    }
+
+    private void parseAqi(String raw) throws Exception {
+        if (raw == null) return;
+        JSONObject cur = new JSONObject(raw).getJSONObject("current");
+        aqi = cur.isNull("us_aqi") ? -1 : (int) Math.round(cur.getDouble("us_aqi"));
+    }
+
+    /** The US AQI band in Vietnamese: Tốt, Trung bình, Kém, Xấu, Rất xấu, Nguy hại. */
+    static String aqiText(int aqi) {
+        if (aqi < 0) return "—";
+        if (aqi <= 50) return "Tốt";
+        if (aqi <= 100) return "Trung bình";
+        if (aqi <= 150) return "Kém";
+        if (aqi <= 200) return "Xấu";
+        if (aqi <= 300) return "Rất xấu";
+        return "Nguy hại";
+    }
+
+    /** The colour of that band: green, yellow, orange, red, purple, maroon. */
+    static int aqiColor(int aqi) {
+        if (aqi < 0) return 0xFFA9B8D0;
+        if (aqi <= 50) return 0xFF3DDC84;
+        if (aqi <= 100) return 0xFFFFD84D;
+        if (aqi <= 150) return 0xFFFF9F43;
+        if (aqi <= 200) return 0xFFFF4D5E;
+        if (aqi <= 300) return 0xFFB07CFF;
+        return 0xFFB5324A;
+    }
+
+    /**
+     * Whether a day is hoàng đạo: the twelve day spirits run through the day branches starting at a branch that
+     * depends on the lunar month (months 1 and 7 start at Tý, 2 and 8 at Dần, 3 and 9 at Thìn, 4 and 10 at Ngọ,
+     * 5 and 11 at Thân, 6 and 12 at Tuất); Thanh Long, Minh Đường, Kim Quỹ, Bảo Quang, Ngọc Đường and Tư Mệnh are
+     * the lucky ones, at offsets 0, 1, 4, 5, 7 and 10.
+     */
+    static boolean hoangDao(int lunarMonth, int dayBranch) {
+        int start = ((lunarMonth - 1) % 6) * 2;
+        int offset = Math.floorMod(dayBranch - start, 12);
+        return offset == 0 || offset == 1 || offset == 4 || offset == 5 || offset == 7 || offset == 10;
     }
 
     private void fetchPrices() {
@@ -343,6 +408,8 @@ final class LiveData {
         k.monthName = STEMS[Math.floorMod(l[2] * 12 + l[1] + 3, 10)] + " " + BRANCHES[Math.floorMod(l[1] + 1, 12)];
         k.yearName = STEMS[Math.floorMod(l[2] + 6, 10)] + " " + BRANCHES[Math.floorMod(l[2] + 8, 12)];
         String yearName = STEMS[Math.floorMod(l[2] + 6, 10)] + " " + BRANCHES[Math.floorMod(l[2] + 8, 12)];
+        k.monthShort = monthName(l[1]) + (l[3] == 1 ? " nhuận" : "");
+        k.auspicious = hoangDao(l[1], (int) Math.floorMod(jd + 1, 12L));
         k.line1 = "Ngày " + l[0] + " tháng " + monthName(l[1]) + (l[3] == 1 ? " nhuận" : "");
         k.line2 = "năm " + yearName;
         k.solar = WEEKDAYS[c.get(Calendar.DAY_OF_WEEK) - 1] + ", " + String.format(Locale.US, "%02d/%02d/%d", d, m, y);

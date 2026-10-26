@@ -99,6 +99,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     /** Set by MainActivity when config design_frame is on: every tile gets the design's size. */
     static DesignFrame frame;
+    /** Package to the small line under its name in the Hà Nội sidebar (config.json app_subtitles). */
+    static java.util.Map<String, String> subtitles = java.util.Collections.emptyMap();
     /** Design size of a tile (dp); tiles shrink from here when the columns don't fit, see tileWidthPx. */
     static final float DESIGN_W_DP = 180f, DESIGN_H_DP = 101f;
 
@@ -440,23 +442,29 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             FrameLayout.LayoutParams iconLp = (FrameLayout.LayoutParams) icon.getLayoutParams();
             TextView label = v.findViewById(R.id.label);
             if (frame.sidebar()) {
-                // Sidebar list: the icon at the left, the name beside it, one tile per row.
-                int gap = Math.round(frame.px(18f) / 2f);
+                // Sidebar list: a round plate with the app's mark at the left, its name and a small line beside it.
+                card.setBackgroundResource(R.drawable.tile_side_bg);
+                int gap = Math.round(frame.px(frame.p.tileGap) / 2f);
                 v.setPadding(0, gap, 0, gap);
-                int pad = Math.round(w * 0.07f);
-                iconLp.width = iconLp.height = Math.round(h * 0.62f);
+                int d = frame.px(102f);
+                iconLp.width = iconLp.height = d;
                 iconLp.gravity = android.view.Gravity.CENTER_VERTICAL | android.view.Gravity.LEFT;
-                iconLp.leftMargin = pad;
+                iconLp.leftMargin = frame.px(12f);
                 iconLp.topMargin = iconLp.bottomMargin = 0;
                 icon.setLayoutParams(iconLp);
+                icon.setBackgroundResource(R.drawable.side_icon_bg);
+                int inset = Math.round(d * 0.2f);
+                icon.setPadding(inset, inset, inset, inset);
                 FrameLayout.LayoutParams labelLp = (FrameLayout.LayoutParams) label.getLayoutParams();
                 labelLp.gravity = android.view.Gravity.CENTER_VERTICAL | android.view.Gravity.LEFT;
                 labelLp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
                 label.setLayoutParams(labelLp);
                 label.setGravity(android.view.Gravity.CENTER_VERTICAL | android.view.Gravity.LEFT);
-                label.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, h * 0.2f);
-                label.setPadding(pad + iconLp.width + Math.round(w * 0.05f), 0, pad, 0);
-                label.setTypeface(label.getTypeface(), android.graphics.Typeface.BOLD);
+                label.setSingleLine(false);
+                label.setMaxLines(2);
+                label.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                label.setIncludeFontPadding(false);
+                label.setPadding(frame.px(159f), 0, frame.px(14f), 0);
             } else {
                 iconLp.width = iconLp.height = Math.round(h * 0.50f);
                 iconLp.gravity = android.view.Gravity.CENTER_HORIZONTAL | android.view.Gravity.TOP;
@@ -469,6 +477,38 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             name.setVisibility(View.GONE);
         }
         return new Holder(v, listener, animations, advancedEffects, reducedMotion, restNameAlpha, focusOvershoot);
+    }
+
+    /** The sidebar row's text: the name in bold, then the app's small line (app_subtitles) in the muted colour. */
+    private static CharSequence sideLabel(Entry e) {
+        String sub = subtitles.get(e.pkg);
+        android.text.SpannableStringBuilder b = new android.text.SpannableStringBuilder(e.label);
+        b.setSpan(new android.text.style.AbsoluteSizeSpan(frame.px(31f)), 0, b.length(), 0);
+        b.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, b.length(), 0);
+        b.setSpan(new android.text.style.ForegroundColorSpan(0xFFFFFFFF), 0, b.length(), 0);
+        if (sub != null && !sub.isEmpty()) {
+            int from = b.length();
+            b.append('\n').append(sub);
+            b.setSpan(new android.text.style.AbsoluteSizeSpan(frame.px(21f)), from, b.length(), 0);
+            b.setSpan(new android.text.style.ForegroundColorSpan(0xFFA9B8D0), from, b.length(), 0);
+        }
+        return b;
+    }
+
+    /** Sidebar mark: an adaptive icon's foreground, or the plain icon, inside the round plate (the view's own padding). */
+    private static void setSideIcon(ImageView view, Drawable icon) {
+        view.setClipToOutline(false);
+        view.setOutlineProvider(ViewOutlineProvider.BACKGROUND);
+        if (android.os.Build.VERSION.SDK_INT >= 26 && icon instanceof android.graphics.drawable.AdaptiveIconDrawable
+                && ((android.graphics.drawable.AdaptiveIconDrawable) icon).getForeground() != null) {
+            view.setImageDrawable(((android.graphics.drawable.AdaptiveIconDrawable) icon).getForeground());
+            view.setScaleX(1.3f);
+            view.setScaleY(1.3f);
+            return;
+        }
+        view.setImageDrawable(icon);
+        view.setScaleX(1f);
+        view.setScaleY(1f);
     }
 
     /**
@@ -548,10 +588,11 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         } else {
             h.banner.setImageDrawable(null);
             h.banner.setVisibility(View.GONE);
-            if (glassMode()) setGlassIcon(h.icon, e.icon);
+            if (glassMode() && frame.sidebar()) setSideIcon(h.icon, e.icon);
+            else if (glassMode()) setGlassIcon(h.icon, e.icon);
             else h.icon.setImageDrawable(e.icon);
             h.icon.setVisibility(View.VISIBLE);
-            h.label.setText(e.label);
+            h.label.setText(glassMode() && frame.sidebar() ? sideLabel(e) : e.label);
             h.label.setVisibility(uniformTiles && !glassMode() ? View.GONE : View.VISIBLE);
         }
         h.card.setOnClickListener(v -> launch(e));

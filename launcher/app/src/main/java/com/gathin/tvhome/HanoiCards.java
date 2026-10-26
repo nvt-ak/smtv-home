@@ -2,36 +2,43 @@ package com.gathin.tvhome;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.LinearGradient;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RectF;
-import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.text.TextPaint;
 import android.text.TextUtils;
 
+import java.util.Calendar;
+import java.util.Locale;
+
 /**
- * The three cards of the Hà Nội look (weather, lunar calendar, gold and fuel prices), drawn in the reference
- * design's own units: mock-up pixels of the 2000x1125 design relative to the card's corner, scaled by
- * {@code u} (card height / 510).
+ * The right-hand column of the Hà Nội look: the weather card, the gold and fuel cards side by side, and the month
+ * with today's lunar date. Drawn in the reference design's own units: mock-up pixels of the 2000x1125 design,
+ * relative to the column's top-left corner (1165, 265) and scaled by {@code u} (view width / 795).
  */
 final class HanoiCards {
-    static final float CARD_H = 510f;
+    /** Width of the column in mock-up units; the view's width maps to it. */
+    static final float COLUMN_W = 795f;
+    /** Height of the column in mock-up units (weather 213, gap 15, prices 155, gap 15, month 349). */
+    static final float COLUMN_H = 747f;
 
     private static final int TEXT = 0xFFFFFFFF;
     private static final int MUTED = 0xFFA9B8D0;
-    private static final int GOLD = 0xFFFFD84D;
-    private static final int GREEN = 0xFF3DDC84;
-    private static final int RED = 0xFFFF4D5E;
-    private static final int PURPLE = 0xFFB07CFF;
+    private static final int DIM = 0x66A9B8D0;
+    private static final int UP = 0xFFFF5D5D;
+    private static final int DOWN = 0xFF3DDC84;
+    private static final int TODAY = 0xFFE5384B;
+    private static final String[] WEEK = {"T2", "T3", "T4", "T5", "T6", "T7", "CN"};
 
     private final Context ctx;
     private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint border = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint panel = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint shape = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final TextPaint text = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private final RectF r = new RectF();
+    private final Path path = new Path();
     private Typeface regular = Typeface.DEFAULT;
     private Typeface medium = Typeface.DEFAULT;
     private Typeface bold = Typeface.DEFAULT_BOLD;
@@ -46,32 +53,57 @@ final class HanoiCards {
         } catch (RuntimeException e) {
             // The system font is fine.
         }
-        fill.setColor(0xB30A1226);
+        fill.setColor(0xB00A1120);
         border.setStyle(Paint.Style.STROKE);
+        border.setColor(0x2EFFFFFF);
         line.setColor(0x26FFFFFF);
-        panel.setColor(0x330A1840);
+        line.setStyle(Paint.Style.STROKE);
+        line.setStrokeCap(Paint.Cap.ROUND);
     }
 
-    void draw(Canvas c, int index, float w, float h, LiveData live) {
-        u = h / CARD_H;
-        r.set(0, 0, w, h);
-        c.drawRoundRect(r, 28 * u, 28 * u, fill);
-        border.setStrokeWidth(Math.max(1f, 1.6f * u));
-        border.setShader(new LinearGradient(0, 0, w, h, 0x9974E5F4, 0x99A07CFF, Shader.TileMode.CLAMP));
-        c.drawRoundRect(r, 28 * u, 28 * u, border);
-        line.setStrokeWidth(Math.max(1f, u));
-        if (index == 0) weather(c, w, live);
-        else if (index == 1) lunar(c, w, live);
-        else prices(c, w, live);
+    /** Draws the whole column into a {@code w} x {@code h} view; the view keeps the column's aspect ratio. */
+    void drawAll(Canvas c, float w, float h, LiveData live) {
+        u = w / COLUMN_W;
+        border.setStrokeWidth(Math.max(1f, 1.5f * u));
+        line.setStrokeWidth(Math.max(1f, 1.5f * u));
+        card(c, 0, 0, 795, 213);
+        weather(c, live);
+        card(c, 0, 228, 388, 155);
+        price(c, 0, 228, R.drawable.ic_gold, "Giá vàng (SJC)", live == null || live.prices == null ? null : live.prices.rows[0], "đ/lượng");
+        card(c, 405, 228, 390, 155);
+        price(c, 405, 228, R.drawable.ic_fuel, "Giá xăng (RON 95-III)", live == null || live.prices == null ? null : live.prices.rows[2], "đ/lít");
+        card(c, 0, 398, 795, 349);
+        month(c, live);
     }
 
-    private void put(Canvas c, String s, float x, float base, float size, Typeface tf, int color, boolean right, float maxW) {
+    private void card(Canvas c, float x, float y, float w, float h) {
+        r.set(x * u, y * u, (x + w) * u, (y + h) * u);
+        c.drawRoundRect(r, 24 * u, 24 * u, fill);
+        c.drawRoundRect(r, 24 * u, 24 * u, border);
+    }
+
+    // ---- helpers -------------------------------------------------------------------------------
+
+    private void style(float size, Typeface tf, int color, Paint.Align align) {
         text.setTypeface(tf);
         text.setTextSize(size * u);
         text.setColor(color);
-        text.setTextAlign(right ? Paint.Align.RIGHT : Paint.Align.LEFT);
-        String t = TextUtils.ellipsize(s, text, maxW * u, TextUtils.TruncateAt.END).toString();
-        c.drawText(t, x * u, base * u, text);
+        text.setTextAlign(align);
+    }
+
+    private void put(Canvas c, String s, float x, float base, float size, Typeface tf, int color, float maxW) {
+        style(size, tf, color, Paint.Align.LEFT);
+        c.drawText(TextUtils.ellipsize(s, text, maxW * u, TextUtils.TruncateAt.END).toString(), x * u, base * u, text);
+    }
+
+    private void putRight(Canvas c, String s, float right, float base, float size, Typeface tf, int color, float maxW) {
+        style(size, tf, color, Paint.Align.RIGHT);
+        c.drawText(TextUtils.ellipsize(s, text, maxW * u, TextUtils.TruncateAt.END).toString(), right * u, base * u, text);
+    }
+
+    private void putCenter(Canvas c, String s, float cx, float base, float size, Typeface tf, int color, float maxW) {
+        style(size, tf, color, Paint.Align.CENTER);
+        c.drawText(TextUtils.ellipsize(s, text, maxW * u, TextUtils.TruncateAt.END).toString(), cx * u, base * u, text);
     }
 
     private float width(String s, float size, Typeface tf) {
@@ -88,10 +120,6 @@ final class HanoiCards {
         d.draw(c);
     }
 
-    private void rule(Canvas c, float x1, float x2, float y) {
-        c.drawLine(x1 * u, y * u, x2 * u, y * u, line);
-    }
-
     private static int weatherIcon(int kind, boolean day) {
         switch (kind) {
             case LiveData.CLEAR: return day ? R.drawable.ic_wx_sun : R.drawable.ic_moon;
@@ -103,92 +131,187 @@ final class HanoiCards {
         }
     }
 
-    // ---- weather -------------------------------------------------------------------------------
-
-    private void weather(Canvas c, float w, LiveData live) {
-        LiveData.Weather wx = live == null ? null : live.weather;
-        vec(c, wx == null ? R.drawable.ic_wx_cloud : weatherIcon(wx.kind, wx.day), 50, 53, 46);
-        put(c, "Thời tiết " + (wx == null ? "" : wx.city), 90, 64, 28, medium, TEXT, false, w / u - 110);
-        String temp = wx == null ? "—" : String.valueOf(Math.round(wx.temp));
-        put(c, temp, 34, 192, 92, bold, TEXT, false, 200);
-        if (wx != null) put(c, "°C", 34 + width(temp, 92, bold) + 4, 150, 44, medium, TEXT, false, 100);
-        put(c, wx == null ? "Chưa có dữ liệu" : wx.text, 36, 236, 24, regular, TEXT, false, 330);
-        put(c, wx == null ? "▲ —" : "▲ " + Math.round(wx.high) + "°C", 36, 292, 22, medium, 0xFFFF6B6B, false, 120);
-        put(c, wx == null ? "▼ —" : "▼ " + Math.round(wx.low) + "°C", 170, 292, 22, medium, 0xFF4DA3FF, false, 120);
-        if (wx != null) vec(c, weatherIcon(wx.kind, wx.day), w / u - 112, 165, 150);
-
-        r.set(24 * u, 330 * u, (w / u - 24) * u, 488 * u);
-        c.drawRoundRect(r, 22 * u, 22 * u, panel);
-        float col = (w / u - 48) / 3f;
-        int[] icons = {R.drawable.ic_drop, R.drawable.ic_wind, R.drawable.ic_eye};
-        String[] labels = {"Độ ẩm", "Gió", "Tầm nhìn"};
-        String[] values = {
-                wx == null || wx.humidity < 0 ? "—" : Math.round(wx.humidity) + "%",
-                wx == null || wx.wind < 0 ? "—" : Math.round(wx.wind) + " km/h",
-                wx == null || wx.visibility < 0 ? "—" : Math.round(wx.visibility) + " km"};
-        for (int i = 0; i < 3; i++) {
-            float x = 24 + col * i + 18;
-            vec(c, icons[i], x + 16, 372, 34);
-            put(c, labels[i], x, 424, 20, regular, MUTED, false, col - 24);
-            put(c, values[i], x, 462, 26, bold, TEXT, false, col - 20);
-            if (i > 0) c.drawLine((24 + col * i) * u, 355 * u, (24 + col * i) * u, 470 * u, line);
-        }
+    /** A map pin, light blue, with its centre on (cx, cy). */
+    private void pin(Canvas c, float cx, float cy, float s) {
+        shape.setStyle(Paint.Style.FILL);
+        shape.setColor(0xFF8EB8FF);
+        path.reset();
+        path.addCircle(cx * u, (cy - s * 0.12f) * u, s * 0.36f * u, Path.Direction.CW);
+        path.moveTo((cx - s * 0.32f) * u, (cy + s * 0.08f) * u);
+        path.lineTo(cx * u, (cy + s * 0.5f) * u);
+        path.lineTo((cx + s * 0.32f) * u, (cy + s * 0.08f) * u);
+        path.close();
+        c.drawPath(path, shape);
+        shape.setColor(0xFF0A1120);
+        c.drawCircle(cx * u, (cy - s * 0.12f) * u, s * 0.13f * u, shape);
     }
 
-    // ---- lunar ---------------------------------------------------------------------------------
-
-    private void lunar(Canvas c, float w, LiveData live) {
-        float wm = w / u;
-        LiveData.LunarCard k = live == null ? null : live.lunar;
-        vec(c, R.drawable.ic_calendar, 52, 53, 42);
-        put(c, "Lịch âm hôm nay", 90, 64, 28, medium, TEXT, false, wm - 110);
-        String day = k == null ? "—" : k.dayNum;
-        put(c, day, 34, 170, 92, bold, TEXT, false, 160);
-        float mx = 34 + Math.max(width(day, 92, bold), 90) + 22;
-        put(c, k == null ? "" : k.month, mx, 135, 30, medium, TEXT, false, wm - mx - 20);
-        put(c, k == null ? "" : "Năm " + k.yearName, mx, 170, 24, regular, MUTED, false, wm - mx - 20);
-        rule(c, 30, wm - 30, 195);
-
-        vec(c, R.drawable.ic_yinyang, wm - 70, 275, 100);
-        put(c, k == null ? "—" : k.weekday, 34, 252, 38, bold, PURPLE, false, wm - 140);
-        put(c, k == null ? "" : "Ngày " + k.dayName, 36, 292, 28, medium, TEXT, false, wm - 140);
-        put(c, k == null ? "" : "Tháng " + k.monthName, 36, 324, 22, regular, MUTED, false, wm - 140);
-        put(c, k == null ? "" : "Năm " + k.yearName, 36, 354, 22, regular, MUTED, false, wm - 140);
-        rule(c, 30, wm - 30, 376);
-
-        put(c, "Giờ hoàng đạo", 36, 412, 24, bold, TEXT, false, wm - 60);
-        if (k != null) {
-            for (int i = 0; i < k.hourRanges.length; i++) {
-                float x = i % 2 == 0 ? 36 : 36 + (wm - 60) / 2f;
-                put(c, k.hourRanges[i], x, 444 + 28 * (i / 2), 20, regular, MUTED, false, (wm - 60) / 2f - 6);
-            }
-        }
+    /** A bold arrow pointing up or down, centred on (cx, cy). */
+    private void arrow(Canvas c, float cx, float cy, float s, boolean up, int color) {
+        shape.setStyle(Paint.Style.STROKE);
+        shape.setStrokeCap(Paint.Cap.ROUND);
+        shape.setStrokeJoin(Paint.Join.ROUND);
+        shape.setStrokeWidth(Math.max(1.5f, 3f * u));
+        shape.setColor(color);
+        float d = up ? -1 : 1;
+        path.reset();
+        path.moveTo(cx * u, (cy + d * s * 0.5f) * u);
+        path.lineTo(cx * u, (cy - d * s * 0.5f) * u);
+        path.moveTo((cx - s * 0.32f) * u, (cy - d * s * 0.18f) * u);
+        path.lineTo(cx * u, (cy - d * s * 0.5f) * u);
+        path.lineTo((cx + s * 0.32f) * u, (cy - d * s * 0.18f) * u);
+        c.drawPath(path, shape);
     }
 
-    // ---- prices --------------------------------------------------------------------------------
+    /** A solid triangle pointing up or down. */
+    private void triangle(Canvas c, float cx, float cy, float s, boolean up, int color) {
+        shape.setStyle(Paint.Style.FILL);
+        shape.setColor(color);
+        path.reset();
+        float d = up ? -1 : 1;
+        path.moveTo(cx * u, (cy + d * s * 0.5f) * u);
+        path.lineTo((cx - s * 0.6f) * u, (cy - d * s * 0.5f) * u);
+        path.lineTo((cx + s * 0.6f) * u, (cy - d * s * 0.5f) * u);
+        path.close();
+        c.drawPath(path, shape);
+    }
+
+    /** A leaf, in the colour of the air quality band. */
+    private void leaf(Canvas c, float cx, float cy, float s, int color) {
+        shape.setStyle(Paint.Style.FILL);
+        shape.setColor(color);
+        path.reset();
+        path.moveTo((cx - s * 0.5f) * u, (cy + s * 0.5f) * u);
+        path.quadTo((cx - s * 0.55f) * u, (cy - s * 0.45f) * u, (cx + s * 0.5f) * u, (cy - s * 0.5f) * u);
+        path.quadTo((cx + s * 0.55f) * u, (cy + s * 0.45f) * u, (cx - s * 0.5f) * u, (cy + s * 0.5f) * u);
+        path.close();
+        c.drawPath(path, shape);
+    }
 
     private static String number(double v) {
-        return java.text.NumberFormat.getIntegerInstance(new java.util.Locale("vi", "VN")).format(Math.round(Math.abs(v)));
+        return java.text.NumberFormat.getIntegerInstance(new Locale("vi", "VN")).format(Math.round(Math.abs(v)));
     }
 
-    private void prices(Canvas c, float w, LiveData live) {
-        float wm = w / u;
-        LiveData.Prices pr = live == null ? null : live.prices;
-        vec(c, R.drawable.ic_chart, 52, 53, 42);
-        put(c, "Giá vàng & xăng dầu", 90, 64, 28, medium, TEXT, false, wm - 100);
-        String[] names = {"Vàng SJC (1 lượng)", "Vàng nhẫn 9999 (1 lượng)", "Xăng RON 95-III (1 lít)", "Dầu diesel 0,05S (1 lít)"};
-        int[] icons = {R.drawable.ic_gold, R.drawable.ic_ring, R.drawable.ic_fuel, R.drawable.ic_fuel};
-        for (int i = 0; i < 4; i++) {
-            float y = 107 * i;
-            LiveData.Row row = pr == null ? null : pr.rows[i];
-            vec(c, icons[i], 56, 142 + y, 50);
-            put(c, names[i], 117, 124 + y, 20, regular, MUTED, false, wm - 140);
-            put(c, row == null ? "—" : number(row.value) + " đ", 116, 163 + y, 34, bold, i < 2 ? GOLD : TEXT, false, wm - 250);
-            if (row != null && !Double.isNaN(row.delta) && Math.round(row.delta) != 0) {
-                boolean up = row.delta > 0;
-                put(c, (up ? "▲ +" : "▼ -") + number(row.delta), wm - 32, 162 + y, 20, medium, up ? GREEN : RED, true, 150);
-            }
-            if (i < 3) rule(c, 30, wm - 30, 190 + y);
+    // ---- weather -------------------------------------------------------------------------------
+
+    private void weather(Canvas c, LiveData live) {
+        LiveData.Weather wx = live == null ? null : live.weather;
+        pin(c, 36, 38, 28);
+        put(c, wx == null || wx.city.isEmpty() ? "—" : wx.city, 62, 47, 27, bold, TEXT, 300);
+        vec(c, wx == null ? R.drawable.ic_wx_cloud : weatherIcon(wx.kind, wx.day), 76, 132, 112);
+        String temp = wx == null ? "—" : String.valueOf(Math.round(wx.temp));
+        put(c, temp, 172, 142, 74, bold, TEXT, 200);
+        if (wx != null) put(c, "°C", 172 + width(temp, 74, bold) + 4, 106, 38, medium, TEXT, 80);
+        put(c, wx == null ? "Chưa có dữ liệu" : wx.text, 172, 182, 24, regular, MUTED, 220);
+
+        arrow(c, 358, 99, 24, true, UP);
+        put(c, wx == null ? "—" : Math.round(wx.high) + "°", 384, 108, 25, medium, TEXT, 90);
+        arrow(c, 358, 148, 24, false, 0xFF4DA3FF);
+        put(c, wx == null ? "—" : Math.round(wx.low) + "°", 384, 157, 25, medium, TEXT, 90);
+
+        c.drawLine(473 * u, 25 * u, 473 * u, 190 * u, line);
+        float ix = 521, lx = 549, vx = 683;
+        vec(c, R.drawable.ic_drop, ix, 53, 30);
+        put(c, "Độ ẩm", lx, 61, 21, regular, MUTED, vx - lx - 8);
+        put(c, wx == null || wx.humidity < 0 ? "—" : Math.round(wx.humidity) + "%", vx, 61, 23, medium, TEXT, 100);
+        vec(c, R.drawable.ic_wind, ix, 100, 30);
+        put(c, "Gió", lx, 108, 21, regular, MUTED, vx - lx - 8);
+        put(c, wx == null || wx.wind < 0 ? "—" : Math.round(wx.wind) + " km/h", vx, 108, 23, medium, TEXT, 105);
+        int aqi = live == null ? -1 : live.aqi;
+        leaf(c, ix, 146, 26, LiveData.aqiColor(aqi));
+        put(c, "Chất lượng", lx, 150, 21, regular, MUTED, vx - lx - 8);
+        put(c, "không khí", lx, 177, 21, regular, MUTED, vx - lx - 8);
+        put(c, LiveData.aqiText(aqi), vx, 150, 23, medium, LiveData.aqiColor(aqi), 105);
+    }
+
+    // ---- gold and fuel ---------------------------------------------------------------------------
+
+    private void price(Canvas c, float ox, float oy, int icon, String title, LiveData.Row row, String unit) {
+        c.save();
+        c.translate(ox * u, oy * u);
+        vec(c, icon, 48, 48, 58);
+        put(c, title, 100, 46, 21, regular, MUTED, 275);
+        String value = row == null ? "—" : number(row.value);
+        put(c, value, 100, 90, 34, bold, TEXT, 190);
+        if (row != null) put(c, unit, 100 + width(value, 34, bold) + 8, 90, 21, regular, MUTED, 90);
+        if (row != null && !Double.isNaN(row.delta) && Math.round(row.delta) != 0) {
+            boolean up = row.delta > 0;
+            double before = row.value - row.delta;
+            String pct = before > 0 ? String.format(new Locale("vi", "VN"), " (%s%.2f%%)", up ? "+" : "-", Math.abs(row.delta) / before * 100) : "";
+            triangle(c, 112, 122, 15, up, up ? UP : DOWN);
+            put(c, (up ? "+" : "-") + number(row.delta) + pct, 134, 130, 22, medium, up ? UP : DOWN, 240);
         }
+        c.restore();
+    }
+
+    // ---- month ---------------------------------------------------------------------------------
+
+    private void month(Canvas c, LiveData live) {
+        c.save();
+        c.translate(0, 398 * u);
+        Calendar now = Calendar.getInstance();
+        int year = now.get(Calendar.YEAR), mon = now.get(Calendar.MONTH), today = now.get(Calendar.DAY_OF_MONTH);
+        put(c, "Tháng " + (mon + 1) + ", " + year, 26, 49, 27, bold, TEXT, 440);
+
+        Calendar first = Calendar.getInstance();
+        first.clear();
+        first.set(year, mon, 1);
+        int lead = (first.get(Calendar.DAY_OF_WEEK) + 5) % 7;
+        int days = first.getActualMaximum(Calendar.DAY_OF_MONTH);
+        Calendar prev = (Calendar) first.clone();
+        prev.add(Calendar.MONTH, -1);
+        int prevDays = prev.getActualMaximum(Calendar.DAY_OF_MONTH);
+        int rows = (lead + days + 6) / 7;
+        float pitch = rows >= 6 ? 36f : 43.5f;
+        for (int i = 0; i < 7; i++) {
+            putCenter(c, WEEK[i], 45 + 66 * i, 92, 19, regular, MUTED, 60);
+        }
+        for (int cell = 0; cell < rows * 7; cell++) {
+            int col = cell % 7, row = cell / 7;
+            int dayNo = cell - lead + 1;
+            String s;
+            int color = TEXT;
+            if (dayNo < 1) {
+                s = String.valueOf(prevDays + dayNo);
+                color = DIM;
+            } else if (dayNo > days) {
+                s = String.valueOf(dayNo - days);
+                color = DIM;
+            } else {
+                s = String.valueOf(dayNo);
+            }
+            float cx = 45 + 66 * col, cy = 135 + pitch * row;
+            if (dayNo == today) {
+                shape.setStyle(Paint.Style.FILL);
+                shape.setColor(TODAY);
+                c.drawCircle(cx * u, cy * u, Math.min(24f, pitch / 2f + 2f) * u, shape);
+                color = TEXT;
+            }
+            putCenter(c, s, cx, cy + 8, 22, dayNo == today ? medium : regular, color, 60);
+        }
+
+        c.drawLine(498 * u, 25 * u, 498 * u, 327 * u, line);
+        LiveData.LunarCard k = live == null ? null : live.lunar;
+        put(c, "Hôm nay", 525, 52, 20, regular, MUTED, 250);
+        put(c, now.get(Calendar.DAY_OF_MONTH) + " tháng " + (mon + 1) + ", " + year, 525, 88, 27, bold, TEXT, 255);
+        put(c, k == null ? "" : "(" + k.dayNum + " tháng " + k.monthShort + " ÂL)", 525, 120, 20, regular, MUTED, 250);
+        String[] items = k == null ? new String[0]
+                : new String[] {"Ngày " + k.dayName, "Tháng " + k.monthName, "Năm " + k.yearName};
+        for (int i = 0; i < items.length; i++) {
+            float y = 160 + 37 * i;
+            shape.setStyle(Paint.Style.FILL);
+            shape.setColor(TODAY);
+            c.drawCircle(537 * u, (y - 6) * u, 5 * u, shape);
+            put(c, items[i], 560, y, 22, regular, TEXT, 225);
+        }
+        if (k != null && k.next1 != null && !k.next1.isEmpty() && !"—".equals(k.next1)) {
+            r.set(530 * u, 265 * u, 772 * u, 315 * u);
+            shape.setStyle(Paint.Style.FILL);
+            shape.setColor(0x14FFFFFF);
+            c.drawRoundRect(r, 25 * u, 25 * u, shape);
+            c.drawRoundRect(r, 25 * u, 25 * u, border);
+            putCenter(c, k.next1, 651, 297, 19, medium, TEXT, 222);
+        }
+        c.restore();
     }
 }

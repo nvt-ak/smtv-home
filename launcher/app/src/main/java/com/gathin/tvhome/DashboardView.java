@@ -90,6 +90,26 @@ public final class DashboardView extends View {
         invalidate();
     }
 
+    private final MinuteTicker ticker = new MinuteTicker(this::onTick);
+
+    private void onTick() {
+        if (hanoi == null) return;
+        if (live != null) live.refreshLunar();
+        invalidate();
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        ticker.start(getContext());
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        ticker.stop(getContext());
+        super.onDetachedFromWindow();
+    }
+
     /** The numbers the Aurora cards draw; call again (on the main thread) after a refresh. */
     void setLive(LiveData data) {
         live = data;
@@ -115,6 +135,10 @@ public final class DashboardView extends View {
         float w = getWidth();
         float h = getHeight();
         if (w <= 0 || h < MIN_HEIGHT_DP * d) return;
+        if (hanoi != null) {
+            hanoi.drawAll(c, w, h, live);
+            return;
+        }
         float[] weights = widths != null ? widths : new float[] {1.5f, 1f, 1f};
         float total = 0;
         for (float v : weights) total += v;
@@ -132,11 +156,10 @@ public final class DashboardView extends View {
         for (int i = 0; i < 3; i++) {
             float cw = unit * weights[i];
             box.set(x, 0, x + cw, h);
-            if (aurora != null || hanoi != null) {
+            if (aurora != null) {
                 c.save();
                 c.translate(x, 0);
-                if (hanoi != null) hanoi.draw(c, i, cw, h, live);
-                else aurora.draw(c, i, cw, h, live);
+                aurora.draw(c, i, cw, h, live);
                 c.restore();
                 x += cw + gap;
                 continue;

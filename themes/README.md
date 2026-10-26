@@ -50,6 +50,7 @@ A new key needs one there in the same pull request.
 | `coocaa_sources` | bool | Coocaa OS (Skyworth, China): list the sources from `com.skyworth.tv` in the Inputs menu, ahead of the source panel |
 | `launch_actions` | list of `"package=action"` | Tiles that open a screen of the app instead of its start screen; an action that no longer resolves opens the app normally (MagentaTV's guide: `com.telekom.onetv.tv.pl=com.telekom.onetv.tv.pl.action.PROGRAM_GUIDE`) |
 | `app_labels` | list of `"package=Name"` | A tile's name instead of the app's own (MagentaTV as `com.telekom.onetv.tv.pl=TV`) |
+| `app_subtitles` | list of `"package=Text"` | Hà Nội look: the small line under an app's name in the sidebar (`com.netflix.ninja=Giải trí không giới hạn`) |
 | `app_banners` | list of `"package=banner_name"` | A tile's artwork from a `banner_*` drawable bundled with the launcher (`banner_tv`: magenta with the Live TV glyph) |
 | `input_action` | string | Action sent with an HDMI/AV row's channel URI when nothing handles the standard `VIEW` (XGIMI: `com.xgimi.action.hdmiPlayer`). Only a handler-less set gets here; any app that claims the channel MIME type takes the row instead, so check with `query-activities` ([#805](https://github.com/Gathin23/cleanyourtv/issues/805)) |
 | `input_uri_scheme` | string | Scheme an HDMI/AV row's passthrough URI is sent with instead of `content://`, with no MIME type (YaOS: `live-tv`, which its source player answers) |
@@ -80,13 +81,13 @@ A new key needs one there in the same pull request.
 | `lunar_date` | bool | Show the lunisolar date under the Gregorian one, e.g. `LUNAR 13/9 · YEAR OF THE HORSE`, or `13/9 ÂM LỊCH · BÍNH NGỌ` in Vietnamese; a leap month is marked. Off by default |
 | `dashboard` | bool | smtv-home fork only. Weather, lunar calendar and price cards between the clock row and the dock title, sized to the room the layout leaves (hidden when there is too little). Off by default. Phase B shows placeholder numbers |
 | `design_frame` | bool | smtv-home fork only. Lays the header, the dashboard cards and a six-tile dock out on the reference design's coordinates (`DesignFrame`, a 2000x1125 mock-up scaled to the screen width). Use with `dashboard`, `columns: 6`, `rows_below_dock: 0`. Off by default; positions are calibrated against a real TV screenshot |
-| `design_profile` | string | smtv-home fork only, with `design_frame`. Which reference design to lay out: `crimson` (default), `hanoi` (a sidebar list of apps on the left, greeting and clock on top; use with `columns: 1`, `dock_row: false`, `dock_title: false`) or `aurora` (glass tiles with icon and name inside, cyan focus ring, page dots, sentence-case header; use with `dock_title: false`, `lunar_date: true`) |
-| `tagline` | string | smtv-home fork only, `design_profile: aurora`. A short line under the header; empty hides it |
-| `corner_bottom` | string | smtv-home fork only, `design_profile: aurora`. Small muted text at the bottom-left corner; empty hides it |
-| `corner_right` | string | smtv-home fork only, `design_profile: aurora`. Small muted text at the bottom-right corner; empty hides it |
+| `design_profile` | string | smtv-home fork only, with `design_frame`. Which reference design to lay out: `crimson` (default), `hanoi` (a "Trang chủ" pill and a timeline of apps on the left, clock, date and lunar date on top, one column of weather, gold, fuel and month cards on the right; use with `columns: 1`, `dock_row: false`, `dock_title: false`) or `aurora` (glass tiles with icon and name inside, cyan focus ring, page dots, sentence-case header; use with `dock_title: false`, `lunar_date: true`) |
+| `tagline` | string | smtv-home fork only, `design_profile: aurora` or `hanoi`. A short line under the header (Aurora) or the quote in the middle of the screen (Hà Nội, `\n` starts a new line); empty hides it |
+| `corner_bottom` | string | smtv-home fork only, `design_profile: aurora` or `hanoi`. Small muted text at the bottom-left corner; empty hides it |
+| `corner_right` | string | smtv-home fork only, `design_profile: aurora` or `hanoi`. Small muted text at the bottom-right corner; empty hides it |
 | `weather_city` | string | smtv-home fork only, `design_profile: aurora`. The name shown on the weather card (default `Hà Nội`); the numbers come from Open-Meteo for `weather_lat` / `weather_lon`. The Aurora cards need the `INTERNET` permission this fork adds, and show a dash until a fetch has worked |
 | `weather_lat` | number | smtv-home fork only. Latitude for the weather card (default 21.028) |
-| `subline` | string | smtv-home fork only, `design_profile: hanoi`. A small line under the clock; empty hides it |
+| `subline` | string | smtv-home fork only. No longer drawn by any look; kept so older themes still load |
 | `weather_lon` | number | smtv-home fork only. Longitude for the weather card (default 105.854) |
 | `lunar_utc_offset` | 0 to 14 | Hours east of UTC the lunar calendar is computed for: `7` is the Vietnamese calendar, `8` the Chinese one; they differ by a day now and then (and by a month in 1985). Unset: 7 when the TV is in Vietnamese, 8 otherwise |
 | `greeting_name` | string | A name after the greeting, e.g. `"Mr. Trịnh"` for GOOD MORNING, MR. TRỊNH; empty for the greeting alone |

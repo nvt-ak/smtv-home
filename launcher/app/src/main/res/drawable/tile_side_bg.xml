@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sidebar row (design_profile hanoi): nothing at rest, a red-tinted pill with a red edge on focus. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="30dp" />
+            <solid android:color="#40FF3B4A" />
+            <stroke android:width="2dp" android:color="#FFFF5A66" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="30dp" />
+            <solid android:color="#00000000" />
+        </shape>
+    </item>
+</selector>

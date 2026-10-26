@@ -98,6 +98,8 @@ final class Config {
     final String weatherCity;
     /** Small line under the clock in the Hà Nội look (config.json subline). */
     final String subline;
+    /** Package to the small line under its name in the Hà Nội sidebar (config.json app_subtitles). */
+    final Map<String, String> appSubtitles;
     final double weatherLat, weatherLon;
     /** Name after the greeting ("Good morning, Mr. Trịnh"); empty for the greeting alone. */
     final String greetingName;
@@ -261,7 +263,7 @@ final class Config {
                    List<RaceWeekend.Race> raceCalendar, boolean cinematicHome, boolean ambientGlow, boolean appGlow, boolean fadeRows, int homeIdleClockMinutes,
                    boolean keyFilter, boolean dockGlass, String glowStyle, boolean wallpaperCaptions,
                    boolean handleViewInputs, boolean tileMenu, boolean dockEvenPadding, boolean cinematicDots, boolean cinematicWhiteFocus, boolean wifiStatusColor, int cinematicScrim, int cinematicArt,
-                   Map<String, Set<String>> wallpaperMoods, boolean gamepadPassthrough, boolean consumeVolumeKeys, boolean wifiStatusWarnings, List<String> topBarApps, boolean showGreeting, boolean headerWhite, boolean clockWallpaper, int clockWallpaperDim, boolean clockGlow, String glassStyle, boolean singleRow, boolean dockBandAll, boolean lunarDate, int lunarUtcOffset, boolean dashboard, boolean designFrame, String designProfile, String tagline, String cornerRight, String cornerBottom, String weatherCity, double weatherLat, double weatherLon, String subline) {
+                   Map<String, Set<String>> wallpaperMoods, boolean gamepadPassthrough, boolean consumeVolumeKeys, boolean wifiStatusWarnings, List<String> topBarApps, boolean showGreeting, boolean headerWhite, boolean clockWallpaper, int clockWallpaperDim, boolean clockGlow, String glassStyle, boolean singleRow, boolean dockBandAll, boolean lunarDate, int lunarUtcOffset, boolean dashboard, boolean designFrame, String designProfile, String tagline, String cornerRight, String cornerBottom, String weatherCity, double weatherLat, double weatherLon, String subline, Map<String, String> appSubtitles) {
         this.handleViewInputs = handleViewInputs;
         this.tileMenu = tileMenu;
         this.inputKeycodes = inputKeycodes;
@@ -299,6 +301,7 @@ final class Config {
         this.cornerBottom = cornerBottom;
         this.weatherCity = weatherCity;
         this.subline = subline;
+        this.appSubtitles = Collections.unmodifiableMap(appSubtitles);
         this.weatherLat = weatherLat;
         this.weatherLon = weatherLon;
         this.greetingName = greetingName;
@@ -421,6 +424,7 @@ final class Config {
         String cornerBottom = res.getString(R.string.corner_bottom).trim();
         String weatherCity = res.getString(R.string.weather_city).trim();
         String subline = res.getString(R.string.subline).trim();
+        List<String> appSubtitles = new ArrayList<>(Arrays.asList(res.getStringArray(R.array.app_subtitles)));
         double weatherLat = 21.028, weatherLon = 105.854;   // Hà Nội
         String greetingName = res.getString(R.string.greeting_name).trim();
         boolean moduleCards = res.getBoolean(R.bool.module_cards);
@@ -527,6 +531,7 @@ final class Config {
             cornerBottom = string(json, "corner_bottom", cornerBottom).trim();
             weatherCity = string(json, "weather_city", weatherCity).trim();
             subline = string(json, "subline", subline).trim();
+            appSubtitles = stringList(json, "app_subtitles", appSubtitles);
             weatherLat = json.optDouble("weather_lat", weatherLat);
             weatherLon = json.optDouble("weather_lon", weatherLon);
             greetingName = string(json, "greeting_name", greetingName).trim();
@@ -647,7 +652,7 @@ final class Config {
                 Math.max(0, Math.min(100, skyIntensity)), settingsKeycodes, settingsKeyPanel, restoreKeyServices, wallpaperEnabled, wallpaper,
                 wallpapers, rotationMinutes, wallpaperDim, dockOpacity, wallpaperOrder, applied,
                 festival, inputKeycodes, appKeys, stockHomeRedirect, json == null ? Collections.emptyList() : raceCalendar(json), cinematic, ambientGlow, appGlow, fadeRows,
-                Math.max(0, idleClockMinutes), keyFilter, dockGlass, glowStyle, wallpaperCaptions, handleViewInputs, tileMenu, dockEvenPadding, cinematicDots, cinematicWhiteFocus, wifiStatusColor, cinematicScrim, cinematicArt, wallpaperMoods, gamepadPassthrough, consumeVolumeKeys, wifiStatusWarnings, topBarApps, showGreeting, headerWhite, clockWallpaper, Math.max(0, Math.min(90, clockWallpaperDim)), clockGlow, glassStyle, singleRow && dockRow, dockBandAll, lunar, lunarOffset, dashboard, designFrame, designProfile, tagline, cornerRight, cornerBottom, weatherCity, weatherLat, weatherLon, subline);
+                Math.max(0, idleClockMinutes), keyFilter, dockGlass, glowStyle, wallpaperCaptions, handleViewInputs, tileMenu, dockEvenPadding, cinematicDots, cinematicWhiteFocus, wifiStatusColor, cinematicScrim, cinematicArt, wallpaperMoods, gamepadPassthrough, consumeVolumeKeys, wifiStatusWarnings, topBarApps, showGreeting, headerWhite, clockWallpaper, Math.max(0, Math.min(90, clockWallpaperDim)), clockGlow, glassStyle, singleRow && dockRow, dockBandAll, lunar, lunarOffset, dashboard, designFrame, designProfile, tagline, cornerRight, cornerBottom, weatherCity, weatherLat, weatherLon, subline, packageMap(appSubtitles));
     }
 
     /**

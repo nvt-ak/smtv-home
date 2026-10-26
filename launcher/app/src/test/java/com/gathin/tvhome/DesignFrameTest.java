@@ -77,8 +77,8 @@ public class DesignFrameTest {
     public void sidebarListFitsTheScreenAndSitsLeftOfTheCards() {
         DesignFrame.Profile p = DesignFrame.HANOI;
         assertTrue(p.sidebar);
-        assertTrue(p.tilesLeft + p.tileW < 443f);
-        assertTrue(p.cardsLeft > 443f);
+        assertTrue(p.tilesLeft + p.tileW < 640f);
+        assertTrue(p.cardsLeft > 640f);
         assertTrue(p.cardsBottom < DesignFrame.H);
         // Six rows fit the screen height.
         assertTrue(p.tileTop + 6 * (p.tileH + p.tileGap) - p.tileGap <= DesignFrame.H);
