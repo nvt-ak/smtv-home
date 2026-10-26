@@ -10,7 +10,7 @@ public class DesignFrameTest {
 
     /** The looks with a row of tiles under the cards. */
     private static final DesignFrame.Profile[] PROFILES = {DesignFrame.CRIMSON, DesignFrame.AURORA};
-    private static final DesignFrame.Profile[] ALL = {DesignFrame.CRIMSON, DesignFrame.AURORA, DesignFrame.HANOI};
+    private static final DesignFrame.Profile[] ALL = {DesignFrame.CRIMSON, DesignFrame.AURORA, DesignFrame.HANOI, DesignFrame.TIMELINE};
 
     @Test
     public void scalesFromTheScreenWidth() {
@@ -24,6 +24,7 @@ public class DesignFrameTest {
         assertSame(DesignFrame.AURORA, DesignFrame.profile("aurora"));
         assertSame(DesignFrame.AURORA, DesignFrame.profile(" Aurora "));
         assertSame(DesignFrame.HANOI, DesignFrame.profile("HaNoi".toLowerCase()));
+        assertSame(DesignFrame.TIMELINE, DesignFrame.profile("hanoi2"));
         assertSame(DesignFrame.CRIMSON, DesignFrame.profile(""));
         assertSame(DesignFrame.CRIMSON, DesignFrame.profile(null));
         assertSame(DesignFrame.CRIMSON, DesignFrame.profile("anything else"));
@@ -75,13 +76,15 @@ public class DesignFrameTest {
 
     @Test
     public void sidebarListFitsTheScreenAndSitsLeftOfTheCards() {
-        DesignFrame.Profile p = DesignFrame.HANOI;
-        assertTrue(p.sidebar);
-        assertTrue(p.tilesLeft + p.tileW < 640f);
-        assertTrue(p.cardsLeft > 640f);
-        assertTrue(p.cardsBottom < DesignFrame.H);
-        // Six rows fit the screen height.
-        assertTrue(p.tileTop + 6 * (p.tileH + p.tileGap) - p.tileGap <= DesignFrame.H);
+        for (DesignFrame.Profile p : new DesignFrame.Profile[] {DesignFrame.HANOI, DesignFrame.TIMELINE}) {
+            float panel = p == DesignFrame.TIMELINE ? 640f : 443f;
+            assertTrue(p.name, p.sidebar);
+            assertTrue(p.name, p.tilesLeft + p.tileW < panel + 1f);
+            assertTrue(p.name, p.cardsLeft > p.tilesLeft + p.tileW);
+            assertTrue(p.name, p.cardsBottom < DesignFrame.H);
+            // Six rows fit the screen height.
+            assertTrue(p.name, p.tileTop + 6 * (p.tileH + p.tileGap) - p.tileGap <= DesignFrame.H);
+        }
     }
 
     @Test

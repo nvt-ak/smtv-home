@@ -441,7 +441,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             View icon = v.findViewById(R.id.icon);
             FrameLayout.LayoutParams iconLp = (FrameLayout.LayoutParams) icon.getLayoutParams();
             TextView label = v.findViewById(R.id.label);
-            if (frame.sidebar()) {
+            if (frame.timeline()) {
                 // Sidebar list: a round plate with the app's mark at the left, its name and a small line beside it.
                 card.setBackgroundResource(R.drawable.tile_side_bg);
                 int gap = Math.round(frame.px(frame.p.tileGap) / 2f);
@@ -465,6 +465,24 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 label.setEllipsize(android.text.TextUtils.TruncateAt.END);
                 label.setIncludeFontPadding(false);
                 label.setPadding(frame.px(159f), 0, frame.px(14f), 0);
+            } else if (frame.sidebar()) {
+                // Sidebar list: the icon at the left, the name beside it, one tile per row.
+                int gap = Math.round(frame.px(18f) / 2f);
+                v.setPadding(0, gap, 0, gap);
+                int pad = Math.round(w * 0.07f);
+                iconLp.width = iconLp.height = Math.round(h * 0.62f);
+                iconLp.gravity = android.view.Gravity.CENTER_VERTICAL | android.view.Gravity.LEFT;
+                iconLp.leftMargin = pad;
+                iconLp.topMargin = iconLp.bottomMargin = 0;
+                icon.setLayoutParams(iconLp);
+                FrameLayout.LayoutParams labelLp = (FrameLayout.LayoutParams) label.getLayoutParams();
+                labelLp.gravity = android.view.Gravity.CENTER_VERTICAL | android.view.Gravity.LEFT;
+                labelLp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                label.setLayoutParams(labelLp);
+                label.setGravity(android.view.Gravity.CENTER_VERTICAL | android.view.Gravity.LEFT);
+                label.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, h * 0.2f);
+                label.setPadding(pad + iconLp.width + Math.round(w * 0.05f), 0, pad, 0);
+                label.setTypeface(label.getTypeface(), android.graphics.Typeface.BOLD);
             } else {
                 iconLp.width = iconLp.height = Math.round(h * 0.50f);
                 iconLp.gravity = android.view.Gravity.CENTER_HORIZONTAL | android.view.Gravity.TOP;
@@ -588,11 +606,11 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         } else {
             h.banner.setImageDrawable(null);
             h.banner.setVisibility(View.GONE);
-            if (glassMode() && frame.sidebar()) setSideIcon(h.icon, e.icon);
+            if (glassMode() && frame.timeline()) setSideIcon(h.icon, e.icon);
             else if (glassMode()) setGlassIcon(h.icon, e.icon);
             else h.icon.setImageDrawable(e.icon);
             h.icon.setVisibility(View.VISIBLE);
-            h.label.setText(glassMode() && frame.sidebar() ? sideLabel(e) : e.label);
+            h.label.setText(glassMode() && frame.timeline() ? sideLabel(e) : e.label);
             h.label.setVisibility(uniformTiles && !glassMode() ? View.GONE : View.VISIBLE);
         }
         h.card.setOnClickListener(v -> launch(e));

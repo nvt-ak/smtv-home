@@ -491,7 +491,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             column.setPadding(frame.contentLeft(), frame.headerTop(), frame.contentRightInset(), column.getPaddingBottom());
             if (dashboardOn) {
                 dashboardView.setCards(frame.cardWidths(), frame.cardGap());
-                if (frame.sidebar()) dashboardView.setHanoi(true);
+                if (frame.timeline()) dashboardView.setHanoi(true);
+                else if (frame.sidebar()) dashboardView.setHanoiRow(true);
                 else dashboardView.setAurora(frame.glassTiles());
                 if (frame.glassTiles()) {
                     liveData = new LiveData(this, cfg.weatherCity, cfg.weatherLat, cfg.weatherLon, Lunar.offsetFor(cfg.lunarUtcOffset, Locale.getDefault()));
@@ -499,7 +500,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 }
             }
             if (!frame.hasTitle()) hero.setVisibility(View.GONE);
-            if (frame.sidebar()) setUpSidebarChrome(cfg);
+            if (frame.timeline()) setUpSidebarChrome(cfg);
+            else if (frame.sidebar()) setUpSidebarRowChrome(cfg);
             else if (frame.glassTiles()) setUpAuroraChrome(cfg);
         }
         lunar = cfg.lunarDate;
@@ -757,7 +759,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         addTopBarApps(cfg.topBarApps);
         iconOnlyButtons = cfg.iconOnlyButtons;
         topMenu = cfg.topMenu;
-        wifiIconOnly = iconOnlyButtons && cfg.wifiLabelWidth <= 0 && !(frame != null && frame.sidebar());
+        wifiIconOnly = iconOnlyButtons && cfg.wifiLabelWidth <= 0 && !(frame != null && frame.timeline());
         if (cfg.wifiStatusColor) {
             wifiPlainTint = btnWifi.getCompoundDrawableTintList();
             wifiOnlineTint = getColorStateList(R.color.pill_icon_online);
@@ -794,7 +796,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             showSettingsMenu();
             return true;
         });
-        if (frame != null && frame.sidebar()) addHanoiButtons(cfg.appLibrary);
+        if (frame != null && frame.timeline()) addHanoiButtons(cfg.appLibrary);
 
         // Keep focus on the top bar at its ends and at the top: Android's focus finder would otherwise
         // jump to a tile far below when there is nothing in that direction.
@@ -1788,6 +1790,117 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         root.addView(pageDots, plp);
         // The slab highlight is replaced by each glass tile's own focus ring.
         glass.setVisibility(View.GONE);
+    }
+
+    /** The first Hà Nội look: a sidebar list on the left, the greeting and clock on top, small texts in the corners. */
+    private void setUpSidebarRowChrome(Config cfg) {
+        View column = findViewById(R.id.column);
+        FrameLayout.LayoutParams full = new FrameLayout.LayoutParams(frame.sidebarWidth(), ViewGroup.LayoutParams.MATCH_PARENT);
+        View panel = new View(this);
+        panel.setBackgroundColor(0xCC060B1D);
+        panel.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        root.addView(panel, root.indexOfChild(column), full);
+
+        // The app list: the grid's wrapper leaves the column and becomes the left strip.
+        View wrapper = (View) findViewById(R.id.grid).getParent();
+        ((ViewGroup) wrapper.getParent()).removeView(wrapper);
+        // The strip is a little larger than the tiles all round: a focused tile grows and its ring must not be clipped.
+        int bleed = frame.px(18f);
+        FrameLayout.LayoutParams wlp = new FrameLayout.LayoutParams(frame.cellWidth() + 2 * bleed, ViewGroup.LayoutParams.MATCH_PARENT);
+        wlp.gravity = android.view.Gravity.TOP | android.view.Gravity.LEFT;
+        wlp.leftMargin = frame.px(47f - 9f) - bleed;
+        wlp.topMargin = Math.max(0, frame.sidebarTopPadding() - bleed);
+        sidebarBleed = bleed;
+        root.addView(wrapper, root.indexOfChild(column) + 1, wlp);
+
+        // Network and settings stay reachable, small, in the bottom-right corner.
+        View buttons = findViewById(R.id.topButtons);
+        ((ViewGroup) buttons.getParent()).removeView(buttons);
+        FrameLayout.LayoutParams blp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        blp.gravity = android.view.Gravity.BOTTOM | android.view.Gravity.RIGHT;
+        blp.rightMargin = frame.px(30f);
+        blp.bottomMargin = frame.px(24f);
+        root.addView(buttons, blp);
+        findViewById(R.id.btnInputs).setVisibility(View.GONE);
+        findViewById(R.id.btnReorder).setVisibility(View.GONE);
+        ((View) findViewById(R.id.leftBlock).getParent()).setVisibility(View.GONE);
+        column.setVisibility(View.GONE);
+
+        String who = cfg.greetingName.isEmpty() ? "bạn" : cfg.greetingName;
+        sidebarText("Chào " + who + "!", frame.px(511f), frame.px(80f), android.view.Gravity.LEFT, frame.px(54f), 0xFFFFFFFF, true, 0f, false);
+        sidebarText(cfg.tagline, frame.px(511f), frame.px(152f), android.view.Gravity.LEFT, frame.px(26f), 0xFF86AEDB, false, 0f, false);
+
+        LinearLayout clockRow = new LinearLayout(this);
+        clockRow.setOrientation(LinearLayout.HORIZONTAL);
+        clockRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        android.widget.TextClock time = new android.widget.TextClock(this);
+        time.setFormat12Hour("HH:mm");
+        time.setFormat24Hour("HH:mm");
+        time.setTextColor(0xFFFFFFFF);
+        time.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        time.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, frame.px(84f));
+        time.setIncludeFontPadding(false);
+        clockRow.addView(time);
+        View bar = new View(this);
+        bar.setBackgroundColor(0x88FFFFFF);
+        LinearLayout.LayoutParams barLp = new LinearLayout.LayoutParams(Math.max(1, frame.px(2f)), frame.px(64f));
+        barLp.setMarginStart(frame.px(28f));
+        barLp.setMarginEnd(frame.px(28f));
+        clockRow.addView(bar, barLp);
+        android.widget.TextClock dateView = new android.widget.TextClock(this);
+        String datePattern = "EEEE'\n'd MMMM, yyyy";
+        dateView.setFormat12Hour(datePattern);
+        dateView.setFormat24Hour(datePattern);
+        dateView.setTextColor(0xFFE8EEFA);
+        dateView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, frame.px(27f));
+        dateView.setLineSpacing(frame.px(6f), 1f);
+        clockRow.addView(dateView);
+        FrameLayout.LayoutParams clp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        clp.gravity = android.view.Gravity.TOP | android.view.Gravity.RIGHT;
+        clp.topMargin = frame.px(62f);
+        clp.rightMargin = frame.px(68f);
+        root.addView(clockRow, clp);
+        sidebarText(cfg.subline, 0, frame.px(166f), android.view.Gravity.RIGHT, frame.px(23f), 0xFF9DB6E6, false, 0f, false);
+
+        if (!cfg.cornerRight.isEmpty()) {
+            android.text.SpannableString s = new android.text.SpannableString(cfg.cornerRight);
+            int nl = cfg.cornerRight.indexOf('\n');
+            if (nl > 0) s.setSpan(new android.text.style.RelativeSizeSpan(1.3f), 0, nl, 0);
+            sidebarText(s, frame.px(1804f), frame.px(292f), android.view.Gravity.LEFT, frame.px(17f), 0xFFDCE6FA, false, 0.14f, true);
+            View rule = new View(this);
+            rule.setBackgroundColor(0x88FFFFFF);
+            FrameLayout.LayoutParams rlp = new FrameLayout.LayoutParams(frame.px(78f), Math.max(1, frame.px(2f)));
+            rlp.gravity = android.view.Gravity.TOP | android.view.Gravity.LEFT;
+            rlp.leftMargin = frame.px(1804f);
+            rlp.topMargin = frame.px(424f);
+            root.addView(rule, rlp);
+        }
+        sidebarText(cfg.cornerBottom, frame.px(64f), frame.px(1112f), android.view.Gravity.LEFT | android.view.Gravity.BOTTOM, frame.px(17f), 0xFF7F93B8, false, 0.02f, false);
+        glass.setVisibility(View.GONE);
+    }
+
+    /** One static text at an absolute spot; {@code x} is a left or right inset and {@code y} a top (or bottom) inset in px. */
+    private void sidebarText(CharSequence text, int x, int y, int gravity, int sizePx, int color, boolean bold, float spacing, boolean caps) {
+        if (text == null || text.length() == 0) return;
+        TextView t = new TextView(this);
+        t.setText(text);
+        t.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, sizePx);
+        t.setTextColor(color);
+        t.setIncludeFontPadding(false);
+        t.setLetterSpacing(spacing);
+        t.setAllCaps(caps);
+        t.setFocusable(false);
+        t.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        if (bold) t.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        boolean fromBottom = (gravity & android.view.Gravity.BOTTOM) != 0;
+        boolean right = (gravity & android.view.Gravity.HORIZONTAL_GRAVITY_MASK) == android.view.Gravity.RIGHT;
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.gravity = (fromBottom ? android.view.Gravity.BOTTOM : android.view.Gravity.TOP) | (right ? android.view.Gravity.RIGHT : android.view.Gravity.LEFT);
+        if (right) lp.rightMargin = x == 0 ? frame.px(150f) : x;
+        else lp.leftMargin = x;
+        if (fromBottom) lp.bottomMargin = getResources().getDisplayMetrics().heightPixels - y;
+        else lp.topMargin = y;
+        root.addView(t, lp);
     }
 
     private HanoiDecor hanoiDecor;

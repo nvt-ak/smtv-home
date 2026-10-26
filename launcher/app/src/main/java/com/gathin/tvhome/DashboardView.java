@@ -47,6 +47,7 @@ public final class DashboardView extends View {
     private final Path clip = new Path();
     private AuroraCards aurora;
     private HanoiCards hanoi;
+    private HanoiRowCards hanoiRow;
     private LiveData live;
     private Typeface regular;
     private Typeface light;
@@ -120,12 +121,22 @@ public final class DashboardView extends View {
     void setAurora(boolean on) {
         aurora = on ? new AuroraCards(getContext()) : null;
         hanoi = null;
+        hanoiRow = null;
         invalidate();
     }
 
     /** Switches to the Hà Nội card design (DesignFrame.Profile.sidebar). */
     void setHanoi(boolean on) {
         hanoi = on ? new HanoiCards(getContext()) : null;
+        hanoiRow = null;
+        aurora = null;
+        invalidate();
+    }
+
+    /** Switches to the first Hà Nội card design: three tall cards in a row (DesignFrame.HANOI). */
+    void setHanoiRow(boolean on) {
+        hanoiRow = on ? new HanoiRowCards(getContext()) : null;
+        hanoi = null;
         aurora = null;
         invalidate();
     }
@@ -156,10 +167,11 @@ public final class DashboardView extends View {
         for (int i = 0; i < 3; i++) {
             float cw = unit * weights[i];
             box.set(x, 0, x + cw, h);
-            if (aurora != null) {
+            if (aurora != null || hanoiRow != null) {
                 c.save();
                 c.translate(x, 0);
-                aurora.draw(c, i, cw, h, live);
+                if (hanoiRow != null) hanoiRow.draw(c, i, cw, h, live);
+                else aurora.draw(c, i, cw, h, live);
                 c.restore();
                 x += cw + gap;
                 continue;

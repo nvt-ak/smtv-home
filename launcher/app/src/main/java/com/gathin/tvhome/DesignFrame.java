@@ -72,12 +72,17 @@ final class DesignFrame {
             80f, 298f, 1772f, 740f, new float[] {552f, 568f, 529f}, 21.5f, 0f,
             77f, 800f, 282f, 168f, 31f, 1034f, true, false);
 
+    /** The first Hà Nội night mock-up: a 443 px sidebar of apps on the left, greeting and clock on top, cards at the bottom. */
+    static final Profile HANOI = new Profile("hanoi", 511f, 1932f, 80f,
+            487f, 503f, 1953f, 1013f, new float[] {511f, 430f, 477f}, 24f, 0f,
+            47f, 80f, 370f, 148f, 18f, 0f, true, true);
+
     /**
-     * The Hà Nội night mock-up: a sidebar of apps on the left (a "Trang chủ" pill on top, one 145 unit row per app,
+     * The second Hà Nội mock-up: a sidebar of apps on the left (a "Trang chủ" pill on top, one 145 unit row per app,
      * a timeline behind the icons), the clock and lunar date on top, and one column of cards on the right (weather,
      * gold and fuel side by side, the month). The cards share one box; {@code cardWidths} is only its width.
      */
-    static final Profile HANOI = new Profile("hanoi", 635f, 1925f, 62f,
+    static final Profile TIMELINE = new Profile("hanoi2", 635f, 1925f, 62f,
             1165f, 265f, 1960f, 1012f, new float[] {795f}, 0f, 0f,
             45f, 240f, 520f, 130f, 15f, 0f, true, true);
 
@@ -85,6 +90,7 @@ final class DesignFrame {
         String n = name == null ? "" : name.trim();
         if ("aurora".equalsIgnoreCase(n)) return AURORA;
         if ("hanoi".equalsIgnoreCase(n)) return HANOI;
+        if ("hanoi2".equalsIgnoreCase(n)) return TIMELINE;
         return CRIMSON;
     }
 
@@ -128,7 +134,9 @@ final class DesignFrame {
     boolean glassTiles() { return p.glassTiles; }
     boolean sidebar() { return p.sidebar; }
     /** Width of the dark sidebar panel behind the app list. */
-    int sidebarWidth() { return px(640f); }
+    int sidebarWidth() { return px(timeline() ? 640f : 443f); }
+    /** The second Hà Nội look: Trang chủ pill, timeline, one column of cards. */
+    boolean timeline() { return p == TIMELINE; }
     /** Left edge of the list's strip: the first tile's left edge less half the gap (the tile is centred in its cell). */
     int sidebarListLeft() { return px(p.tilesLeft - p.tileGap / 2f); }
     /** One list row: a tile plus the gap under it. */
