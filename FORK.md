@@ -4,8 +4,9 @@ A fork of [Gathin23/cleanyourtv](https://github.com/Gathin23/cleanyourtv) (MIT),
 for the [SmartTV Manager](https://github.com/nvt-ak/smart-tv-manager) app. Forked at upstream commit
 `eb0131a32fd8567086f39002f1782f7c1b078ca6`, on the branch `smtv-main`.
 
-The README's top section summarises the fork and lists every source and licence; this file keeps the details.
-The upstream licence stays in `LICENSE`, and upstream's own README follows the fork section in `README.md`.
+`.github/README.md` is the fork's front page (GitHub shows it before the root README) and lists every source and
+licence; this file keeps the details. The upstream licence stays in `LICENSE`, and upstream's own README stays
+unchanged in `README.md`, because the tests and docs link to it.
 
 ## Differences from upstream
 
