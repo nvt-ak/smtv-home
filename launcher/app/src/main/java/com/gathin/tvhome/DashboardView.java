@@ -46,6 +46,7 @@ public final class DashboardView extends View {
     private final RectF small = new RectF();
     private final Path clip = new Path();
     private AuroraCards aurora;
+    private LiveData live;
     private Typeface regular;
     private Typeface light;
     private Typeface medium;
@@ -88,6 +89,12 @@ public final class DashboardView extends View {
         invalidate();
     }
 
+    /** The numbers the Aurora cards draw; call again (on the main thread) after a refresh. */
+    void setLive(LiveData data) {
+        live = data;
+        invalidate();
+    }
+
     /** Switches to the Aurora card design (DesignFrame.Profile.glassTiles). */
     void setAurora(boolean on) {
         aurora = on ? new AuroraCards(getContext()) : null;
@@ -119,7 +126,7 @@ public final class DashboardView extends View {
             if (aurora != null) {
                 c.save();
                 c.translate(x, 0);
-                aurora.draw(c, i, cw, h);
+                aurora.draw(c, i, cw, h, live);
                 c.restore();
                 x += cw + gap;
                 continue;

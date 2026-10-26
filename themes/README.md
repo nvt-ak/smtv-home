@@ -84,6 +84,9 @@ A new key needs one there in the same pull request.
 | `tagline` | string | smtv-home fork only, `design_profile: aurora`. A short line under the header; empty hides it |
 | `corner_bottom` | string | smtv-home fork only, `design_profile: aurora`. Small muted text at the bottom-left corner; empty hides it |
 | `corner_right` | string | smtv-home fork only, `design_profile: aurora`. Small muted text at the bottom-right corner; empty hides it |
+| `weather_city` | string | smtv-home fork only, `design_profile: aurora`. The name shown on the weather card (default `Hà Nội`); the numbers come from Open-Meteo for `weather_lat` / `weather_lon`. The Aurora cards need the `INTERNET` permission this fork adds, and show a dash until a fetch has worked |
+| `weather_lat` | number | smtv-home fork only. Latitude for the weather card (default 21.028) |
+| `weather_lon` | number | smtv-home fork only. Longitude for the weather card (default 105.854) |
 | `lunar_utc_offset` | 0 to 14 | Hours east of UTC the lunar calendar is computed for: `7` is the Vietnamese calendar, `8` the Chinese one; they differ by a day now and then (and by a month in 1985). Unset: 7 when the TV is in Vietnamese, 8 otherwise |
 | `greeting_name` | string | A name after the greeting, e.g. `"Mr. Trịnh"` for GOOD MORNING, MR. TRỊNH; empty for the greeting alone |
 | `show_greeting` | bool | The greeting above the clock (`true` by default); `false` hides it |

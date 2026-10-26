@@ -54,16 +54,16 @@ final class AuroraCards {
     }
 
     /** Draws card {@code index} (0 weather, 1 lunar, 2 prices) into the box 0,0,w,h of the (already translated) canvas. */
-    void draw(Canvas c, int index, float w, float h) {
+    void draw(Canvas c, int index, float w, float h, LiveData live) {
         u = h / CARD_H;
         border.setStrokeWidth(Math.max(1f, 1.5f * u));
         r.set(0, 0, w, h);
         c.drawRoundRect(r, 26 * u, 26 * u, fill);
         c.drawRoundRect(r, 26 * u, 26 * u, border);
         line.setStrokeWidth(Math.max(1f, u));
-        if (index == 0) weather(c, w);
-        else if (index == 1) lunar(c, w);
-        else prices(c, w);
+        if (index == 0) weather(c, w, live);
+        else if (index == 1) lunar(c, w, live);
+        else prices(c, w, live);
     }
 
     // ---- text ----------------------------------------------------------------------------------
@@ -83,43 +83,63 @@ final class AuroraCards {
 
     // ---- weather -------------------------------------------------------------------------------
 
-    private void weather(Canvas c, float w) {
-        float wm = w / u;   // card width in mock units
-        // The moon behind the clouds, top right.
-        shape.setShader(new RadialGradient(wm * 0.78f * u, 100 * u, 70 * u,
-                new int[] {0x55FFFFFF, 0x14FFFFFF, 0x00FFFFFF}, new float[] {0f, 0.5f, 1f}, Shader.TileMode.CLAMP));
-        c.drawCircle(wm * 0.78f * u, 100 * u, 70 * u, shape);
-        shape.setShader(null);
-        shape.setColor(0xFFE9EEF0);
-        c.drawCircle(wm * 0.78f * u, 100 * u, 24 * u, shape);
+    private static int weatherIcon(int kind, boolean day) {
+        switch (kind) {
+            case LiveData.CLEAR: return day ? R.drawable.ic_wx_sun : R.drawable.ic_moon;
+            case LiveData.PARTLY: return R.drawable.ic_wx_partly;
+            case LiveData.RAIN: return R.drawable.ic_wx_rain;
+            case LiveData.STORM: return R.drawable.ic_wx_storm;
+            case LiveData.FOG: return R.drawable.ic_wx_fog;
+            default: return R.drawable.ic_wx_cloud;
+        }
+    }
 
-        vec(c, R.drawable.ic_wx_rain, 62, 56, 56);
+    private static String deg(double v) {
+        return Math.round(v) + "°";
+    }
+
+    private void weather(Canvas c, float w, LiveData live) {
+        float wm = w / u;   // card width in mock units
+        LiveData.Weather wx = live == null ? null : live.weather;
+        boolean day = wx == null || wx.day;
+        if (!day) {
+            // The moon behind the clouds, top right; by day there is no art.
+            shape.setShader(new RadialGradient(wm * 0.78f * u, 100 * u, 70 * u,
+                    new int[] {0x55FFFFFF, 0x14FFFFFF, 0x00FFFFFF}, new float[] {0f, 0.5f, 1f}, Shader.TileMode.CLAMP));
+            c.drawCircle(wm * 0.78f * u, 100 * u, 70 * u, shape);
+            shape.setShader(null);
+            shape.setColor(0xFFE9EEF0);
+            c.drawCircle(wm * 0.78f * u, 100 * u, 24 * u, shape);
+        }
+        vec(c, wx == null ? R.drawable.ic_wx_cloud : weatherIcon(wx.kind, wx.day), 62, 56, 56);
         put(c, "Thời tiết", 107, 48, 26, medium, TEXT, false, 300);
-        put(c, "Hà Nội", 107, 78, 18, regular, MUTED, false, 300);
-        put(c, "18°C", 36, 163, 62, bold, TEXT, false, 260);
-        put(c, "Trời nhiều mây", 38, 205, 23, medium, TEXT, false, wm - 200);
-        put(c, "Có mưa nhẹ về đêm", 38, 238, 18, regular, MUTED, false, wm - 160);
+        put(c, wx == null ? "—" : wx.city, 107, 78, 18, regular, MUTED, false, 300);
+        put(c, wx == null ? "—" : Math.round(wx.temp) + "°C", 36, 163, 62, bold, TEXT, false, 260);
+        put(c, wx == null ? "Chưa có dữ liệu" : wx.text, 38, 205, 23, medium, TEXT, false, wm - 200);
+        put(c, wx == null ? "Kiểm tra kết nối mạng" : wx.note, 38, 238, 18, regular, MUTED, false, wm - 160);
         float right = wm - 52;
-        put(c, "▲ 22°", right, 205, 20, medium, TEXT, true, 120);
-        put(c, "▼ 16°", right, 238, 20, medium, TEXT, true, 120);
+        put(c, wx == null ? "▲ —" : "▲ " + deg(wx.high), right, 205, 20, medium, TEXT, true, 120);
+        put(c, wx == null ? "▼ —" : "▼ " + deg(wx.low), right, 238, 20, medium, TEXT, true, 120);
         rule(c, 38, wm - 52, 263);
 
-        String[] hours = {"21h", "0h", "3h", "6h", "9h"};
-        String[] temps = {"18°", "17°", "17°", "16°", "19°"};
         float span = wm - 2 * 68f;
         for (int i = 0; i < 5; i++) {
             float cx = 68 + span * i / 4f;
-            put(c, hours[i], cx - 16, 310, 18, regular, MUTED, false, 60);
-            vec(c, i < 3 ? R.drawable.ic_wx_rain : i == 3 ? R.drawable.ic_wx_cloud : R.drawable.ic_wx_partly, cx, 350, 46);
-            put(c, temps[i], cx - 18, 406, 21, medium, TEXT, false, 60);
+            boolean has = wx != null && wx.hourLabel[i] != null;
+            put(c, has ? wx.hourLabel[i] : "—", cx - 16, 310, 18, regular, MUTED, false, 60);
+            if (has) {
+                int hour = Integer.parseInt(wx.hourLabel[i].replace("h", ""));
+                vec(c, weatherIcon(wx.hourKind[i], hour >= 6 && hour < 18), cx, 350, 46);
+                put(c, deg(wx.hourTemp[i]), cx - 18, 406, 21, medium, TEXT, false, 60);
+            }
         }
     }
 
     // ---- lunar ---------------------------------------------------------------------------------
 
-    private void lunar(Canvas c, float w) {
+    private void lunar(Canvas c, float w, LiveData live) {
         float wm = w / u;
-        // Crescent moon icon.
+        LiveData.LunarCard k = live == null ? null : live.lunar;
         vec(c, R.drawable.ic_moon, 54, 47, 38);
         put(c, "Lịch âm", 90, 54, 26, medium, TEXT, false, 240);
 
@@ -132,45 +152,59 @@ final class AuroraCards {
         shape.setStyle(Paint.Style.FILL);
         put(c, "Xem chi tiết  ›", wm - 166, 56, 16, regular, TEXT, false, 125);
 
-        put(c, "Ngày 15 tháng Chạp", 37, 124, 30, medium, TEXT, false, wm - 120);
-        put(c, "năm Giáp Thìn", 37, 162, 30, medium, TEXT, false, wm - 120);
+        put(c, k == null ? "—" : k.line1, 37, 124, 30, medium, TEXT, false, wm - 120);
+        put(c, k == null ? "" : k.line2, 37, 162, 30, medium, TEXT, false, wm - 120);
         rule(c, 37, wm - 36, 192);
 
         float vx = 206;
         float vw = wm - vx - 36;
+        String dash = "—";
         put(c, "Dương lịch", 37, 237, 20, regular, MUTED, false, 160);
-        put(c, "Thứ Ba, 14/01/2025", vx, 237, 20, regular, TEXT, false, vw);
+        put(c, k == null ? dash : k.solar, vx, 237, 20, regular, TEXT, false, vw);
         put(c, "Can chi", 37, 275, 20, regular, MUTED, false, 160);
-        put(c, "Kỷ Mão - Giáp Thìn", vx, 275, 20, regular, TEXT, false, vw);
+        put(c, k == null ? dash : k.canChi, vx, 275, 20, regular, TEXT, false, vw);
         put(c, "Giờ hoàng đạo", 37, 314, 20, regular, MUTED, false, 165);
-        put(c, "Tý, Sửu, Thìn, Tỵ,", vx, 314, 20, regular, TEXT, false, vw);
-        put(c, "Mùi, Tuất", vx, 342, 20, regular, TEXT, false, vw);
-        put(c, "Việc nên làm", 37, 386, 20, regular, MUTED, false, 165);
-        put(c, "Cầu tài, xuất hành,", vx, 386, 20, regular, TEXT, false, vw);
-        put(c, "ươm mầm việc tốt", vx, 414, 20, regular, TEXT, false, vw);
+        put(c, k == null ? dash : k.hours1, vx, 314, 20, regular, TEXT, false, vw);
+        put(c, k == null ? "" : k.hours2, vx, 342, 20, regular, TEXT, false, vw);
+        put(c, "Sắp tới", 37, 386, 20, regular, MUTED, false, 165);
+        put(c, k == null ? dash : k.next1, vx, 386, 20, regular, TEXT, false, vw);
+        put(c, k == null ? "" : k.next2, vx, 414, 20, regular, TEXT, false, vw);
     }
 
     // ---- prices --------------------------------------------------------------------------------
 
-    private void prices(Canvas c, float w) {
+    private static String money(double v, boolean signed) {
+        long n = Math.round(Math.abs(v));
+        String d = java.text.NumberFormat.getIntegerInstance(new java.util.Locale("vi", "VN")).format(n);
+        return d + "đ";
+    }
+
+    private void prices(Canvas c, float w, LiveData live) {
         float wm = w / u;
-        // Bar-chart icon.
+        LiveData.Prices pr = live == null ? null : live.prices;
         vec(c, R.drawable.ic_chart, 56, 47, 38);
         put(c, "Giá cả hôm nay", 97, 54, 26, medium, TEXT, false, 270);
-        put(c, "Cập nhật 20:24", wm - 36, 52, 17, regular, MUTED, true, 190);
+        String when = "Cập nhật —";
+        if (pr != null && pr.at > 0) {
+            when = "Cập nhật " + android.text.format.DateFormat.format("HH:mm", pr.at);
+        }
+        put(c, when, wm - 36, 52, 17, regular, MUTED, true, 190);
         rule(c, 36, wm - 36, 88);
 
         String[] names = {"Vàng SJC (9999)", "Vàng nhẫn (9999)", "Xăng RON 95-III", "Dầu DO 0,05S"};
-        String[] units = {"1 lượng", "1 chỉ", "1 lít", "1 lít"};
-        String[] price = {"86.500.000đ", "85.200.000đ", "21.000đ", "19.080đ"};
-        String[] delta = {"▲ 500.000đ", "▲ 400.000đ", "▼ 200đ", "▼ 180đ"};
+        String[] units = {"1 lượng", "1 lượng", "1 lít", "1 lít"};
+        int[] icons = {R.drawable.ic_gold, R.drawable.ic_ring, R.drawable.ic_fuel, R.drawable.ic_fuel};
         for (int i = 0; i < 4; i++) {
             float cy = 121 + 89 * i;
-            vec(c, i == 0 ? R.drawable.ic_gold : i == 1 ? R.drawable.ic_ring : R.drawable.ic_fuel, 66, cy, 48);
+            LiveData.Row row = pr == null ? null : pr.rows[i];
+            vec(c, icons[i], 66, cy, 48);
             put(c, names[i], 126, cy + 7, 20, medium, TEXT, false, wm - 300);
             put(c, units[i], 126, cy + 35, 16, regular, MUTED, false, 160);
-            put(c, price[i], wm - 36, cy + 7, 22, bold, TEXT, true, 190);
-            put(c, delta[i], wm - 36, cy + 38, 19, medium, delta[i].startsWith("▲") ? GREEN : RED, true, 190);
+            put(c, row == null ? "—" : money(row.value, false), wm - 36, cy + 7, 22, bold, TEXT, true, 190);
+            if (row != null && !Double.isNaN(row.delta) && Math.round(row.delta) != 0) {
+                boolean up = row.delta > 0;
+                put(c, (up ? "▲ " : "▼ ") + money(row.delta, false), wm - 36, cy + 38, 19, medium, up ? GREEN : RED, true, 190);
+            }
             if (i < 3) rule(c, 36, wm - 36, cy + 45);
         }
     }

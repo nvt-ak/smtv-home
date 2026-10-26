@@ -491,6 +491,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (dashboardOn) {
                 dashboardView.setCards(frame.cardWidths(), frame.cardGap());
                 dashboardView.setAurora(frame.glassTiles());
+                if (frame.glassTiles()) {
+                    liveData = new LiveData(this, cfg.weatherCity, cfg.weatherLat, cfg.weatherLon, Lunar.offsetFor(cfg.lunarUtcOffset, Locale.getDefault()));
+                    dashboardView.setLive(liveData);
+                }
             }
             if (!frame.hasTitle()) hero.setVisibility(View.GONE);
             if (frame.glassTiles()) setUpAuroraChrome(cfg);
@@ -956,6 +960,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             return;
         }
         restartIdleClock();
+        handler.removeCallbacks(liveRefresh);
+        if (liveData != null) handler.post(liveRefresh);
         promptsPaused = false;
         if (grid.getAdapter() == null) grid.setAdapter(adapter);   // dropped by onTrimMemory
         switch (tileRefresh.onResume(packagesChangedSinceRebuild())) {
@@ -1162,6 +1168,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         ambient.animate().cancel();
         heroArt.animate().cancel();
         handler.removeCallbacks(minuteTick);
+        handler.removeCallbacks(liveRefresh);
         stopStats();
         if (diya != null) diya.stop();
         cancelPendingFocusScroll();
@@ -1717,6 +1724,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     // ---- Aurora look (design_profile aurora) -----------------------------------------------------
 
     private PageDotsView pageDots;
+    private LiveData liveData;
+    private final Runnable liveRefresh = new Runnable() {
+        @Override
+        public void run() {
+            if (liveData == null) return;
+            liveData.refreshIfStale(() -> dashboardView.setLive(liveData));
+            handler.postDelayed(this, 10 * 60_000L);
+        }
+    };
 
     /** Restyles the header and adds the tagline, the two corner texts and the page dots of the Aurora design. */
     private void setUpAuroraChrome(Config cfg) {
