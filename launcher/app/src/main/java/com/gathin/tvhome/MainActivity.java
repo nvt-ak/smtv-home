@@ -643,7 +643,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // 7dp gap and 22dp label item_app.xml keeps for them would only lift the row: sit it that much lower.
             if (singleRow && !cfg.alwaysShowNames) want += (int) (29 * density);
             // The tile's top is the item padding (8dp) plus DockDecoration's top offset (6dp) below the grid padding.
-            if (frame != null && frame.sidebar()) want = frame.sidebarTopPadding();
+            if (frame != null && frame.sidebar()) want = sidebarBleed;
             else if (frame != null) want = Math.max(0, frame.tileTop() - ((View) grid.getParent()).getTop() - (int) (14 * density));
             if (dashboardOn) placeDashboard(want, cfg.dockTitle);
             if (grid.getPaddingTop() != want) {
@@ -1730,6 +1730,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     // ---- Aurora look (design_profile aurora) -----------------------------------------------------
 
     private PageDotsView pageDots;
+    private int sidebarBleed;
     private LiveData liveData;
     private final Runnable liveRefresh = new Runnable() {
         @Override
@@ -1797,9 +1798,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // The app list: the grid's wrapper leaves the column and becomes the left strip.
         View wrapper = (View) findViewById(R.id.grid).getParent();
         ((ViewGroup) wrapper.getParent()).removeView(wrapper);
-        FrameLayout.LayoutParams wlp = new FrameLayout.LayoutParams(frame.cellWidth(), ViewGroup.LayoutParams.MATCH_PARENT);
+        // The strip is a little larger than the tiles all round: a focused tile grows and its ring must not be clipped.
+        int bleed = frame.px(18f);
+        FrameLayout.LayoutParams wlp = new FrameLayout.LayoutParams(frame.cellWidth() + 2 * bleed, ViewGroup.LayoutParams.MATCH_PARENT);
         wlp.gravity = android.view.Gravity.TOP | android.view.Gravity.LEFT;
-        wlp.leftMargin = frame.px(47f - 9f);
+        wlp.leftMargin = frame.px(47f - 9f) - bleed;
+        wlp.topMargin = Math.max(0, frame.sidebarTopPadding() - bleed);
+        sidebarBleed = bleed;
         root.addView(wrapper, root.indexOfChild(column) + 1, wlp);
 
         // Network and settings stay reachable, small, in the bottom-right corner.
@@ -1837,7 +1842,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         barLp.setMarginEnd(frame.px(28f));
         clockRow.addView(bar, barLp);
         android.widget.TextClock dateView = new android.widget.TextClock(this);
-        String datePattern = "EEEE'\n'd MMMM, y";
+        String datePattern = "EEEE'\n'd MMMM, yyyy";
         dateView.setFormat12Hour(datePattern);
         dateView.setFormat24Hour(datePattern);
         dateView.setTextColor(0xFFE8EEFA);
@@ -1882,7 +1887,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         t.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         if (bold) t.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
         boolean fromBottom = (gravity & android.view.Gravity.BOTTOM) != 0;
-        boolean right = (gravity & android.view.Gravity.RIGHT) != 0;
+        boolean right = (gravity & android.view.Gravity.HORIZONTAL_GRAVITY_MASK) == android.view.Gravity.RIGHT;
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lp.gravity = (fromBottom ? android.view.Gravity.BOTTOM : android.view.Gravity.TOP) | (right ? android.view.Gravity.RIGHT : android.view.Gravity.LEFT);
         if (right) lp.rightMargin = x == 0 ? frame.px(150f) : x;
