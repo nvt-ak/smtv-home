@@ -489,7 +489,10 @@ final class Config {
 
         File dir = dir(ctx);
         File file = dir != null ? new File(dir, FILE_NAME) : null;
-        boolean mounted = Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState());
+        // "Mounted" is not enough at boot: with file-based encryption the app folder can be reported but still not
+        // listable. Reading it then looked like "no theme", which deleted the kept copy and showed the built-in look
+        // until the storage opened up a while later.
+        boolean mounted = Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState()) && readable(dir);
         JSONObject json = readOverlay(ctx, file, mounted);
         if (json != null) {
             applied = true;
@@ -604,8 +607,7 @@ final class Config {
         if (chosenRows >= 0 && chosenRows <= 3) rowsBelow = chosenRows;
         animations = choices.getBoolean("animations", animations);
         advancedEffects = choices.getBoolean("advanced_effects", advancedEffects);
-        File wallpaper = dir != null ? new File(dir, WALLPAPER_NAME) : null;
-        if (wallpaper != null && !(wallpaper.isFile() && wallpaper.length() > 0)) wallpaper = null;
+        File wallpaper = keepWallpaperCopy(ctx, dir != null ? new File(dir, WALLPAPER_NAME) : null, mounted);
         // A theme can also switch the wallpaper off while the file is still there.
         boolean wallpaperEnabled = json == null || bool(json, "wallpaper", true);
         if (!wallpaperEnabled) wallpaper = null;
@@ -716,6 +718,36 @@ final class Config {
         } catch (Exception ignored) {
             return "absent";
         }
+    }
+
+    /** True when the folder exists and can be listed. */
+    static boolean readable(File dir) {
+        return dir != null && dir.isDirectory() && dir.list() != null;
+    }
+
+    /**
+     * The theme's wallpaper, or while the storage is not readable yet (early boot) the copy kept in the app's own
+     * folder, so Home comes up with the right picture at once instead of the built-in one.
+     */
+    private static File keepWallpaperCopy(Context ctx, File source, boolean mounted) {
+        File copy = new File(ctx.getFilesDir(), WALLPAPER_NAME);
+        if (!mounted) return copy.isFile() && copy.length() > 0 ? copy : null;
+        if (source == null || !(source.isFile() && source.length() > 0)) {
+            copy.delete();
+            return null;
+        }
+        if (!copy.isFile() || copy.length() != source.length() || copy.lastModified() != source.lastModified()) {
+            try (InputStream in = new FileInputStream(source); FileOutputStream out = new FileOutputStream(copy)) {
+                byte[] buf = new byte[16 * 1024];
+                int n;
+                while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+                copy.setLastModified(source.lastModified());
+            } catch (IOException e) {
+                Log.w(TAG, "could not keep a copy of " + source + ": " + e.getMessage());
+                copy.delete();
+            }
+        }
+        return source;
     }
 
     /** Reads and parses the overlay; any problem means "no overlay", never a crash on the home screen. */
