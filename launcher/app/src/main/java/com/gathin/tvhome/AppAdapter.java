@@ -539,13 +539,16 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             apps.setBounds(0, 0, mark, mark);
             button.setCompoundDrawablesRelative(apps, null, null, null);
         }
+        // The pill style tints its icon like its text; the blue mark keeps its own colours.
+        button.setCompoundDrawableTintList(null);
         button.setCompoundDrawablePadding(frame.px(25f));
-        button.setPadding(frame.px(30f), 0, frame.px(70f), 0);
+        button.setPadding(frame.px(30f), 0, frame.px(50f), 0);
         button.setGravity(android.view.Gravity.CENTER_VERTICAL | android.view.Gravity.START);
         button.setAllCaps(false);
         button.setTextColor(0xFFFFFFFF);
         button.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, frame.px(31f));
         button.setSingleLine(true);
+        button.setEllipsize(android.text.TextUtils.TruncateAt.END);
     }
 
     /** The sidebar row's text: the name in bold, then the app's small line (app_subtitles) in the muted colour. */
@@ -849,6 +852,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     float focusScale() {
+        // The panel rows sit flush against the screen edge: the gold ring and chevron mark focus, the tile does not grow.
+        if (frame != null && frame.panel()) return 1f;
         if (glassMode()) return animations ? 1.03f : 1f;
         return !animations ? 1f : advancedEffects ? 1.12f : 1.10f;
     }
@@ -1109,7 +1114,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 view.animate().cancel();
                 banner.animate().cancel();
                 name.animate().cancel();
-                float scale = !animations ? 1f : advancedEffects ? 1.12f : 1.10f;
+                float scale = !animations || (frame != null && frame.panel()) ? 1f : advancedEffects ? 1.12f : 1.10f;
                 float s = focused ? scale : 1f;
                 if (!animations) {
                     view.setScaleX(1f);

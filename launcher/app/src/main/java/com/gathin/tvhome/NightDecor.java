@@ -111,6 +111,13 @@ final class NightDecor extends View {
     }
 
     private void header(Canvas c) {
+        // A soft shadow keeps the clock and date readable where the wallpaper's moon is bright.
+        text.setShadowLayer(10f * s, 0f, 2f * s, 0xAA000000);
+        drawHeader(c);
+        text.clearShadowLayer();
+    }
+
+    private void drawHeader(Canvas c) {
         Calendar now = Calendar.getInstance();
         String clock = String.format(Locale.US, "%02d:%02d", now.get(Calendar.HOUR_OF_DAY), now.get(Calendar.MINUTE));
         text.setShader(new LinearGradient(0, 70 * s, 0, 170 * s, 0xFFFFF6E3, 0xFFF3CF94, Shader.TileMode.CLAMP));
@@ -127,6 +134,7 @@ final class NightDecor extends View {
     }
 
     private static String part(int hour) {
+        if (hour < 5) return "buổi tối";
         if (hour < 11) return "buổi sáng";
         if (hour < 14) return "buổi trưa";
         if (hour < 18) return "buổi chiều";
