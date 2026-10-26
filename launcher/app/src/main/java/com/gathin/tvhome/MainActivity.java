@@ -382,6 +382,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         density = getResources().getDisplayMetrics().density;
         // config.xml, overlaid by config.json from a pushed theme (see Config and tools/theme.sh).
         Config cfg = Config.load(this);
+        android.util.Log.i("SmtvHome", "config: profile=" + cfg.designProfile + " frame=" + cfg.designFrame + " dashboard=" + cfg.dashboard
+                + " hiddenWidgets=" + cfg.hiddenWidgets);
         appLibrarySelection = cfg.appLibrarySelection;
         // restore_key_services: after a force stop, put back the remote's accessibility helpers that Android took
         // off the list (needs WRITE_SECURE_SETTINGS, granted by build-and-install with RESTORE_KEY_SERVICES=1).
