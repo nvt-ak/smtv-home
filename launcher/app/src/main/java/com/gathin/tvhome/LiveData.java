@@ -40,6 +40,8 @@ final class LiveData {
         String text = "";
         String note = "";
         double temp, high, low;
+        /** Relative humidity in percent, wind in km/h and visibility in km; negative when the API gave none. */
+        double humidity = -1, wind = -1, visibility = -1;
         boolean day = true;
         int kind;
         final String[] hourLabel = new String[5];
@@ -62,6 +64,9 @@ final class LiveData {
 
     static final class LunarCard {
         String line1, line2, solar, canChi, hours1, hours2, next1, next2;
+        /** The Hà Nội card's pieces: day number, month, weekday, day / month / year stem-branch, hours with their range. */
+        String dayNum, month, weekday, dayName, monthName, yearName;
+        String[] hourRanges = new String[0];
         int dayKey;
     }
 
@@ -143,7 +148,7 @@ final class LiveData {
     private void fetchWeather() {
         try {
             String raw = get("https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon
-                    + "&current=temperature_2m,weather_code,is_day&hourly=temperature_2m,weather_code"
+                    + "&current=temperature_2m,weather_code,is_day,relative_humidity_2m,wind_speed_10m,visibility&hourly=temperature_2m,weather_code"
                     + "&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max"
                     + "&timezone=auto&forecast_days=3");
             long at = System.currentTimeMillis();
@@ -193,6 +198,10 @@ final class LiveData {
         w.at = at;
         w.temp = cur.getDouble("temperature_2m");
         w.day = cur.optInt("is_day", 1) == 1;
+        w.humidity = cur.optDouble("relative_humidity_2m", -1);
+        w.wind = cur.optDouble("wind_speed_10m", -1);
+        double vis = cur.optDouble("visibility", -1);
+        w.visibility = vis < 0 ? -1 : vis / 1000.0;
         int code = cur.getInt("weather_code");
         w.kind = kindOf(code);
         w.text = textOf(code);
@@ -327,6 +336,12 @@ final class LiveData {
         long jd = Lunar.jdFromDate(d, m, y);
         LunarCard k = new LunarCard();
         k.dayKey = dayKey();
+        k.dayNum = String.valueOf(l[0]);
+        k.month = "Tháng " + monthName(l[1]) + (l[3] == 1 ? " nhuận" : "");
+        k.weekday = WEEKDAYS[c.get(Calendar.DAY_OF_WEEK) - 1];
+        k.dayName = STEMS[(int) Math.floorMod(jd + 9, 10L)] + " " + BRANCHES[(int) Math.floorMod(jd + 1, 12L)];
+        k.monthName = STEMS[Math.floorMod(l[2] * 12 + l[1] + 3, 10)] + " " + BRANCHES[Math.floorMod(l[1] + 1, 12)];
+        k.yearName = STEMS[Math.floorMod(l[2] + 6, 10)] + " " + BRANCHES[Math.floorMod(l[2] + 8, 12)];
         String yearName = STEMS[Math.floorMod(l[2] + 6, 10)] + " " + BRANCHES[Math.floorMod(l[2] + 8, 12)];
         k.line1 = "Ngày " + l[0] + " tháng " + monthName(l[1]) + (l[3] == 1 ? " nhuận" : "");
         k.line2 = "năm " + yearName;
@@ -336,6 +351,11 @@ final class LiveData {
         StringBuilder a = new StringBuilder(), b = new StringBuilder();
         int[] good = GOOD_HOURS[dayBranch % 6];
         for (int i = 0; i < good.length; i++) (i < 4 ? a : b).append(i == 0 || i == 4 ? "" : ", ").append(BRANCHES[good[i]]);
+        k.hourRanges = new String[good.length];
+        for (int i = 0; i < good.length; i++) {
+            int from = Math.floorMod(good[i] * 2 - 1, 24);
+            k.hourRanges[i] = BRANCHES[good[i]] + " (" + from + "-" + (from + 2) % 24 + "h)";
+        }
         k.hours1 = a + ",";
         k.hours2 = b.toString();
         // Next new moon / full moon, and Tết, found by walking forward day by day.

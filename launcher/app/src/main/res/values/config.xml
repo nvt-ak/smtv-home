@@ -213,6 +213,7 @@
     <string name="design_profile" translatable="false">crimson</string>
     <string name="tagline" translatable="false"></string>
     <string name="corner_right" translatable="false"></string>
+    <string name="subline" translatable="false"></string>
     <string name="weather_city" translatable="false">Hà Nội</string>
     <string name="corner_bottom" translatable="false"></string>
 

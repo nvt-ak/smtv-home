@@ -33,11 +33,13 @@ final class DesignFrame {
         final float dotsY;
         /** The tile shows its icon and name inside, in a dark glass card, instead of the app's banner. */
         final boolean glassTiles;
+        /** The tiles are one vertical list on the left (icon and name side by side) instead of a row under the cards. */
+        final boolean sidebar;
 
         Profile(String name, float contentLeft, float contentRight, float headerTop, float cardsLeft, float cardsTop,
                 float cardsRight, float cardsBottom, float[] cardWidths, float cardGap, float titleTop,
                 float tilesLeft, float tileTop, float tileW, float tileH, float tileGap, float dotsY,
-                boolean glassTiles) {
+                boolean glassTiles, boolean sidebar) {
             this.name = name;
             this.contentLeft = contentLeft;
             this.contentRight = contentRight;
@@ -56,21 +58,30 @@ final class DesignFrame {
             this.tileGap = tileGap;
             this.dotsY = dotsY;
             this.glassTiles = glassTiles;
+            this.sidebar = sidebar;
         }
     }
 
     /** The crimson mock-up (the default). */
     static final Profile CRIMSON = new Profile("crimson", 98f, 1915f, 60f,
             70f, 228f, 1935f, 760f, new float[] {771f, 522f, 528f}, 22f, 788f,
-            78f, 865f, 288f, 140f, 22f, 0f, false);
+            78f, 865f, 288f, 140f, 22f, 0f, false, false);
 
     /** The Aurora Midnight mock-up: narrower cards, taller glass tiles, no title line, page dots. */
     static final Profile AURORA = new Profile("aurora", 82f, 1923f, 80f,
             80f, 298f, 1772f, 740f, new float[] {552f, 568f, 529f}, 21.5f, 0f,
-            77f, 800f, 282f, 168f, 31f, 1034f, true);
+            77f, 800f, 282f, 168f, 31f, 1034f, true, false);
+
+    /** The Hà Nội night mock-up: a 443 px sidebar of apps on the left, greeting and clock on top, cards at the bottom. */
+    static final Profile HANOI = new Profile("hanoi", 511f, 1932f, 80f,
+            487f, 503f, 1953f, 1013f, new float[] {511f, 430f, 477f}, 24f, 0f,
+            47f, 80f, 370f, 148f, 18f, 0f, true, true);
 
     static Profile profile(String name) {
-        return "aurora".equalsIgnoreCase(name == null ? "" : name.trim()) ? AURORA : CRIMSON;
+        String n = name == null ? "" : name.trim();
+        if ("aurora".equalsIgnoreCase(n)) return AURORA;
+        if ("hanoi".equalsIgnoreCase(n)) return HANOI;
+        return CRIMSON;
     }
 
     private final float scale;
@@ -111,6 +122,13 @@ final class DesignFrame {
     int titleTop() { return px(p.titleTop); }
     int dotsY() { return px(p.dotsY); }
     boolean glassTiles() { return p.glassTiles; }
+    boolean sidebar() { return p.sidebar; }
+    /** Width of the dark sidebar panel behind the app list. */
+    int sidebarWidth() { return px(443f); }
+    /** One list row: a tile plus the gap under it. */
+    int rowHeight() { return px(p.tileH + p.tileGap); }
+    /** Grid padding above the first tile of the sidebar list (the tile is centred in its row). */
+    int sidebarTopPadding() { return px(p.tileTop - p.tileGap / 2f); }
 
     /** One grid cell: a tile plus the gap after it. The row of {@link #TILES} cells spans the tiles exactly. */
     int cellWidth() { return px(p.tileW + p.tileGap); }

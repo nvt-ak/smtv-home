@@ -8,7 +8,9 @@ import org.junit.Test;
 
 public class DesignFrameTest {
 
+    /** The looks with a row of tiles under the cards. */
     private static final DesignFrame.Profile[] PROFILES = {DesignFrame.CRIMSON, DesignFrame.AURORA};
+    private static final DesignFrame.Profile[] ALL = {DesignFrame.CRIMSON, DesignFrame.AURORA, DesignFrame.HANOI};
 
     @Test
     public void scalesFromTheScreenWidth() {
@@ -21,6 +23,7 @@ public class DesignFrameTest {
     public void profileNamesResolve() {
         assertSame(DesignFrame.AURORA, DesignFrame.profile("aurora"));
         assertSame(DesignFrame.AURORA, DesignFrame.profile(" Aurora "));
+        assertSame(DesignFrame.HANOI, DesignFrame.profile("HaNoi".toLowerCase()));
         assertSame(DesignFrame.CRIMSON, DesignFrame.profile(""));
         assertSame(DesignFrame.CRIMSON, DesignFrame.profile(null));
         assertSame(DesignFrame.CRIMSON, DesignFrame.profile("anything else"));
@@ -28,7 +31,7 @@ public class DesignFrameTest {
 
     @Test
     public void cardsFillTheirBoxExactly() {
-        for (DesignFrame.Profile p : PROFILES) {
+        for (DesignFrame.Profile p : ALL) {
             float sum = p.cardGap * (p.cardWidths.length - 1);
             for (float w : p.cardWidths) sum += w;
             assertEquals(p.name, p.cardsRight - p.cardsLeft, sum, 1e-3f);
@@ -71,8 +74,19 @@ public class DesignFrameTest {
     }
 
     @Test
+    public void sidebarListFitsTheScreenAndSitsLeftOfTheCards() {
+        DesignFrame.Profile p = DesignFrame.HANOI;
+        assertTrue(p.sidebar);
+        assertTrue(p.tilesLeft + p.tileW < 443f);
+        assertTrue(p.cardsLeft > 443f);
+        assertTrue(p.cardsBottom < DesignFrame.H);
+        // Six rows fit the screen height.
+        assertTrue(p.tileTop + 6 * (p.tileH + p.tileGap) - p.tileGap <= DesignFrame.H);
+    }
+
+    @Test
     public void sameFractionsAtEveryResolution() {
-        for (DesignFrame.Profile p : PROFILES) {
+        for (DesignFrame.Profile p : ALL) {
             DesignFrame hd = new DesignFrame(1280, p);
             DesignFrame fhd = new DesignFrame(1920, p);
             assertEquals(p.name, (float) hd.cardsTop() / hd.px(DesignFrame.H), (float) fhd.cardsTop() / fhd.px(DesignFrame.H), 0.002f);
