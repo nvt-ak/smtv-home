@@ -13,11 +13,11 @@ unchanged in `README.md`, because the tests and docs link to it.
 - The default `applicationId` is `com.smtv_manager.home`, so it installs next to `com.gathin.tvhome`.
 - The manifest adds `INTERNET`, which upstream deliberately does not have, for the live cards. This fork is not
   meant to be sent back as a pull request.
-- `design_frame` and `design_profile` (`crimson`, `aurora`, `hanoi`, `hanoi2`) lay Home out on a reference design's
+- `design_frame` and `design_profile` (`crimson`, `aurora`, `hanoi`, `hanoi2`, `hanoi3`) lay Home out on a reference design's
   coordinates; `DesignFrame.java` holds each design's measurements.
-- A dashboard of live cards: weather with air quality (`AuroraCards`, `HanoiRowCards`, `HanoiCards`), prices, lunar
+- A dashboard of live cards: weather with air quality (`AuroraCards`, `HanoiRowCards`, `HanoiCards`, `NightCards`), prices, lunar
   and month calendars, fed by `LiveData.java`. Responses are cached in the `live` SharedPreferences.
-- `HanoiDecor.java` draws the `hanoi2` header, timeline, quote and footer on one canvas; `MinuteTicker.java` redraws it
+- `HanoiDecor.java` draws the `hanoi2` header, timeline, quote and footer on one canvas, `NightDecor.java` the `hanoi3` panel, clock, greeting and corner texts; `MinuteTicker.java` redraws it
   from the system's own minute tick instead of polling.
 - Sidebar looks: per-app subtitles (`app_subtitles`), round icon plates, a red focus pill.
 - English and Vietnamese resources only (`resourceConfigurations`).

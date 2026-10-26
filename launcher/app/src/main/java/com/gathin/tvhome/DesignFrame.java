@@ -86,11 +86,21 @@ final class DesignFrame {
             1165f, 265f, 1960f, 1012f, new float[] {795f}, 0f, 0f,
             45f, 240f, 520f, 130f, 15f, 0f, true, true);
 
+    /**
+     * The third Hà Nội mock-up: a dark panel of apps down the right edge (one 142 unit row per app, a gold ring and a
+     * chevron on the focused one), the clock and greeting on top left, and three cards on the left and in the middle
+     * (weather with a five day forecast, gold and fuel, today's lunar date). The cards share one box (65,282 to 1497,917).
+     */
+    static final Profile PANEL = new Profile("hanoi3", 82f, 1497f, 62f,
+            65f, 282f, 1497f, 917f, new float[] {1432f}, 0f, 0f,
+            1580f, 90f, 402f, 130f, 12f, 0f, true, true);
+
     static Profile profile(String name) {
         String n = name == null ? "" : name.trim();
         if ("aurora".equalsIgnoreCase(n)) return AURORA;
         if ("hanoi".equalsIgnoreCase(n)) return HANOI;
         if ("hanoi2".equalsIgnoreCase(n)) return TIMELINE;
+        if ("hanoi3".equalsIgnoreCase(n)) return PANEL;
         return CRIMSON;
     }
 
@@ -134,9 +144,11 @@ final class DesignFrame {
     boolean glassTiles() { return p.glassTiles; }
     boolean sidebar() { return p.sidebar; }
     /** Width of the dark sidebar panel behind the app list. */
-    int sidebarWidth() { return px(timeline() ? 640f : 443f); }
+    int sidebarWidth() { return px(timeline() ? 640f : panel() ? 438f : 443f); }
     /** The second Hà Nội look: Trang chủ pill, timeline, one column of cards. */
     boolean timeline() { return p == TIMELINE; }
+    /** The third Hà Nội look: the app list in a panel on the right, three cards on the left. */
+    boolean panel() { return p == PANEL; }
     /** Left edge of the list's strip: the first tile's left edge less half the gap (the tile is centred in its cell). */
     int sidebarListLeft() { return px(p.tilesLeft - p.tileGap / 2f); }
     /** One list row: a tile plus the gap under it. */

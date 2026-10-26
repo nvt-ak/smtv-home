@@ -390,6 +390,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (viewType == 1) {
             View row = LayoutInflater.from(ctx).inflate(R.layout.row_app_library, parent, false);
             View button = row.findViewById(R.id.btnLibrary);
+            if (frame != null && frame.panel()) styleLibraryRow(row, (TextView) button);
             button.setOnClickListener(v -> listener.onLibraryRequested());
             button.setOnFocusChangeListener((v, focused) -> { if (focused) listener.onLibraryFocused(); });
             button.setOnKeyListener((v, key, event) -> {
@@ -441,7 +442,33 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             View icon = v.findViewById(R.id.icon);
             FrameLayout.LayoutParams iconLp = (FrameLayout.LayoutParams) icon.getLayoutParams();
             TextView label = v.findViewById(R.id.label);
-            if (frame.timeline()) {
+            if (frame.panel()) {
+                // Right-hand panel: the app's own icon as a rounded square, its name beside it; a gold ring and a
+                // chevron appear on the focused row (tile_panel_bg).
+                card.setBackgroundResource(R.drawable.tile_panel_bg);
+                int gap = Math.round(frame.px(frame.p.tileGap) / 2f);
+                v.setPadding(0, gap, 0, gap);
+                // The icon view is two thirds of the visible size and is scaled up 1.5x in onBind, so an adaptive
+                // icon (drawn at 108 units with a 72 unit visible area) fills it edge to edge.
+                int visible = frame.px(104f);
+                int d = Math.round(visible / 1.5f);
+                iconLp.width = iconLp.height = d;
+                iconLp.gravity = android.view.Gravity.CENTER_VERTICAL | android.view.Gravity.LEFT;
+                iconLp.leftMargin = frame.px(30f) + (visible - d) / 2;
+                iconLp.topMargin = iconLp.bottomMargin = 0;
+                icon.setLayoutParams(iconLp);
+                FrameLayout.LayoutParams labelLp = (FrameLayout.LayoutParams) label.getLayoutParams();
+                labelLp.gravity = android.view.Gravity.CENTER_VERTICAL | android.view.Gravity.LEFT;
+                labelLp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                label.setLayoutParams(labelLp);
+                label.setGravity(android.view.Gravity.CENTER_VERTICAL | android.view.Gravity.LEFT);
+                label.setSingleLine(true);
+                label.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                label.setIncludeFontPadding(false);
+                label.setTextColor(0xFFFFFFFF);
+                label.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, frame.px(31f));
+                label.setPadding(frame.px(157f), 0, frame.px(70f), 0);
+            } else if (frame.timeline()) {
                 // Sidebar list: a round plate with the app's mark at the left, its name and a small line beside it.
                 card.setBackgroundResource(R.drawable.tile_side_bg);
                 int gap = Math.round(frame.px(frame.p.tileGap) / 2f);
@@ -497,6 +524,30 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return new Holder(v, listener, animations, advancedEffects, reducedMotion, restNameAlpha, focusOvershoot);
     }
 
+    /** The app library in the right-hand panel: a row like the apps' own, with a blue mark and the same gold ring. */
+    private void styleLibraryRow(View row, TextView button) {
+        ViewGroup.LayoutParams rowLp = row.getLayoutParams();
+        rowLp.height = frame.px(frame.p.tileH + frame.p.tileGap);
+        row.setLayoutParams(rowLp);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(frame.tileWidth(), frame.tileHeight());
+        lp.gravity = android.view.Gravity.CENTER;
+        button.setLayoutParams(lp);
+        button.setBackgroundResource(R.drawable.tile_panel_bg);
+        int mark = frame.px(104f);
+        Drawable apps = ctx.getDrawable(R.drawable.ic_apps_tile);
+        if (apps != null) {
+            apps.setBounds(0, 0, mark, mark);
+            button.setCompoundDrawablesRelative(apps, null, null, null);
+        }
+        button.setCompoundDrawablePadding(frame.px(25f));
+        button.setPadding(frame.px(30f), 0, frame.px(70f), 0);
+        button.setGravity(android.view.Gravity.CENTER_VERTICAL | android.view.Gravity.START);
+        button.setAllCaps(false);
+        button.setTextColor(0xFFFFFFFF);
+        button.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, frame.px(31f));
+        button.setSingleLine(true);
+    }
+
     /** The sidebar row's text: the name in bold, then the app's small line (app_subtitles) in the muted colour. */
     private static CharSequence sideLabel(Entry e) {
         String sub = subtitles.get(e.pkg);
@@ -527,6 +578,28 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         view.setImageDrawable(icon);
         view.setScaleX(1f);
         view.setScaleY(1f);
+    }
+
+    /**
+     * Panel row mark: the whole icon as a rounded square. The view is two thirds of the mark's size and is scaled up here:
+     * an adaptive icon's visible area is 72 of its 108 units, so at 1.5x it fills the square; a plain square icon is
+     * clipped to rounded corners instead.
+     */
+    private static void setPanelIcon(ImageView view, Drawable icon) {
+        view.setImageDrawable(icon);
+        view.setScaleX(1.5f);
+        view.setScaleY(1.5f);
+        if (android.os.Build.VERSION.SDK_INT >= 26 && icon instanceof android.graphics.drawable.AdaptiveIconDrawable) {
+            view.setClipToOutline(false);
+            return;
+        }
+        view.setOutlineProvider(new ViewOutlineProvider() {
+            @Override
+            public void getOutline(View v, android.graphics.Outline outline) {
+                outline.setRoundRect(0, 0, v.getWidth(), v.getHeight(), v.getWidth() * 0.22f);
+            }
+        });
+        view.setClipToOutline(true);
     }
 
     /**
@@ -606,7 +679,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         } else {
             h.banner.setImageDrawable(null);
             h.banner.setVisibility(View.GONE);
-            if (glassMode() && frame.timeline()) setSideIcon(h.icon, e.icon);
+            if (glassMode() && frame.panel()) setPanelIcon(h.icon, e.icon);
+            else if (glassMode() && frame.timeline()) setSideIcon(h.icon, e.icon);
             else if (glassMode()) setGlassIcon(h.icon, e.icon);
             else h.icon.setImageDrawable(e.icon);
             h.icon.setVisibility(View.VISIBLE);

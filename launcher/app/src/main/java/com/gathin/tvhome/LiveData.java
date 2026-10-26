@@ -47,6 +47,13 @@ final class LiveData {
         final String[] hourLabel = new String[5];
         final double[] hourTemp = new double[5];
         final int[] hourKind = new int[5];
+        /** The temperature it feels like, NaN when the API gave none. */
+        double feels = Double.NaN;
+        /** Daily forecast from today on: high, low and sky of each day; {@code days} counts the ones the API sent. */
+        final double[] dayHigh = new double[5];
+        final double[] dayLow = new double[5];
+        final int[] dayKind = new int[5];
+        int days;
         long at;
     }
 
@@ -165,9 +172,9 @@ final class LiveData {
     private void fetchWeather() {
         try {
             String raw = get("https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon
-                    + "&current=temperature_2m,weather_code,is_day,relative_humidity_2m,wind_speed_10m,visibility&hourly=temperature_2m,weather_code"
-                    + "&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max"
-                    + "&timezone=auto&forecast_days=3");
+                    + "&current=temperature_2m,apparent_temperature,weather_code,is_day,relative_humidity_2m,wind_speed_10m,visibility&hourly=temperature_2m,weather_code"
+                    + "&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code"
+                    + "&timezone=auto&forecast_days=5");
             long at = System.currentTimeMillis();
             parseWeather(raw, at);
             prefs.edit().putString("weather", raw).putLong("weather_at", at).apply();
@@ -270,8 +277,20 @@ final class LiveData {
         int code = cur.getInt("weather_code");
         w.kind = kindOf(code);
         w.text = textOf(code);
-        w.high = daily.getJSONArray("temperature_2m_max").getDouble(0);
-        w.low = daily.getJSONArray("temperature_2m_min").getDouble(0);
+        w.feels = cur.optDouble("apparent_temperature", Double.NaN);
+        JSONArray maxes = daily.getJSONArray("temperature_2m_max");
+        JSONArray mins = daily.getJSONArray("temperature_2m_min");
+        JSONArray dayCodes = daily.optJSONArray("weather_code");
+        w.high = maxes.getDouble(0);
+        w.low = mins.getDouble(0);
+        if (dayCodes != null) {
+            w.days = Math.min(5, Math.min(dayCodes.length(), Math.min(maxes.length(), mins.length())));
+            for (int i = 0; i < w.days; i++) {
+                w.dayHigh[i] = maxes.getDouble(i);
+                w.dayLow[i] = mins.getDouble(i);
+                w.dayKind[i] = kindOf(dayCodes.getInt(i));
+            }
+        }
         int rain = daily.getJSONArray("precipitation_probability_max").optInt(0, -1);
         w.note = rain >= 0 ? "Khả năng mưa " + rain + "%" : "";
         JSONObject hourly = j.getJSONObject("hourly");

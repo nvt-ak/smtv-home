@@ -493,6 +493,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 dashboardView.setCards(frame.cardWidths(), frame.cardGap());
                 dashboardView.setHidden(cfg.hiddenWidgets);
                 if (frame.timeline()) dashboardView.setHanoi(true);
+                else if (frame.panel()) dashboardView.setNight(true);
                 else if (frame.sidebar()) dashboardView.setHanoiRow(true);
                 else dashboardView.setAurora(frame.glassTiles());
                 if (frame.glassTiles()) {
@@ -501,7 +502,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 }
             }
             if (!frame.hasTitle()) hero.setVisibility(View.GONE);
-            if (frame.timeline()) setUpSidebarChrome(cfg);
+            if (frame.timeline() || frame.panel()) setUpSidebarChrome(cfg);
             else if (frame.sidebar()) setUpSidebarRowChrome(cfg);
             else if (frame.glassTiles()) setUpAuroraChrome(cfg);
         }
@@ -1744,6 +1745,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             liveData.refreshIfStale(() -> {
                 dashboardView.setLive(liveData);
                 if (hanoiDecor != null) hanoiDecor.setLive(liveData);
+                if (nightDecor != null) nightDecor.setLive(liveData);
             });
             handler.postDelayed(this, 10 * 60_000L);
         }
@@ -1905,14 +1907,23 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     private HanoiDecor hanoiDecor;
+    private NightDecor nightDecor;
     private TextView hanoiWifi;
 
     /** The Hà Nội look: the shade, timeline, header and quote (HanoiDecor), the app list on the left, three round buttons on top. */
     private void setUpSidebarChrome(Config cfg) {
         View column = findViewById(R.id.column);
-        hanoiDecor = new HanoiDecor(this, frame, cfg.tagline, cfg.cornerBottom.replace('\n', ' '), cfg.cornerRight.replace('\n', ' '), cfg.hiddenWidgets);
-        hanoiDecor.setLive(liveData);
-        root.addView(hanoiDecor, root.indexOfChild(column), new FrameLayout.LayoutParams(
+        View decor;
+        if (frame.panel()) {
+            nightDecor = new NightDecor(this, cfg.tagline, cfg.cornerBottom.replace('\n', ' '), cfg.cornerRight.replace('\n', ' '), cfg.hiddenWidgets);
+            nightDecor.setLive(liveData);
+            decor = nightDecor;
+        } else {
+            hanoiDecor = new HanoiDecor(this, frame, cfg.tagline, cfg.cornerBottom.replace('\n', ' '), cfg.cornerRight.replace('\n', ' '), cfg.hiddenWidgets);
+            hanoiDecor.setLive(liveData);
+            decor = hanoiDecor;
+        }
+        root.addView(decor, root.indexOfChild(column), new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         // The app list: the grid's wrapper leaves the column and becomes the left strip.

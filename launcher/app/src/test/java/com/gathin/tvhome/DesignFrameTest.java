@@ -10,7 +10,7 @@ public class DesignFrameTest {
 
     /** The looks with a row of tiles under the cards. */
     private static final DesignFrame.Profile[] PROFILES = {DesignFrame.CRIMSON, DesignFrame.AURORA};
-    private static final DesignFrame.Profile[] ALL = {DesignFrame.CRIMSON, DesignFrame.AURORA, DesignFrame.HANOI, DesignFrame.TIMELINE};
+    private static final DesignFrame.Profile[] ALL = {DesignFrame.CRIMSON, DesignFrame.AURORA, DesignFrame.HANOI, DesignFrame.TIMELINE, DesignFrame.PANEL};
 
     @Test
     public void scalesFromTheScreenWidth() {
@@ -25,6 +25,8 @@ public class DesignFrameTest {
         assertSame(DesignFrame.AURORA, DesignFrame.profile(" Aurora "));
         assertSame(DesignFrame.HANOI, DesignFrame.profile("HaNoi".toLowerCase()));
         assertSame(DesignFrame.TIMELINE, DesignFrame.profile("hanoi2"));
+        assertSame(DesignFrame.PANEL, DesignFrame.profile("hanoi3"));
+        assertSame(DesignFrame.PANEL, DesignFrame.profile(" HANOI3 "));
         assertSame(DesignFrame.CRIMSON, DesignFrame.profile(""));
         assertSame(DesignFrame.CRIMSON, DesignFrame.profile(null));
         assertSame(DesignFrame.CRIMSON, DesignFrame.profile("anything else"));
@@ -95,5 +97,21 @@ public class DesignFrameTest {
             assertEquals(p.name, (float) hd.cardsTop() / hd.px(DesignFrame.H), (float) fhd.cardsTop() / fhd.px(DesignFrame.H), 0.002f);
             assertEquals(p.name, (float) hd.tileTop() / hd.px(DesignFrame.H), (float) fhd.tileTop() / fhd.px(DesignFrame.H), 0.002f);
         }
+    }
+
+    @Test
+    public void panelListSitsRightOfTheCardsAndFitsTheScreen() {
+        DesignFrame.Profile p = DesignFrame.PANEL;
+        assertTrue(p.sidebar);
+        assertTrue(p.glassTiles);
+        assertTrue(new DesignFrame(1920, p).panel());
+        assertTrue(p.tilesLeft > p.cardsRight);
+        assertTrue(p.tilesLeft + p.tileW <= DesignFrame.W);
+        assertTrue(p.cardsBottom < DesignFrame.H);
+        // Seven rows (the mock-up shows seven apps) fit the screen height.
+        assertTrue(p.tileTop + 7 * (p.tileH + p.tileGap) - p.tileGap <= DesignFrame.H);
+        // The weather and the right-hand cards of NightCards fill the cards box exactly.
+        assertEquals(p.cardsRight - p.cardsLeft, NightCards.BOX_W, 1e-3f);
+        assertEquals(p.cardsBottom - p.cardsTop, NightCards.BOX_H, 1e-3f);
     }
 }

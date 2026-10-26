@@ -48,6 +48,7 @@ public final class DashboardView extends View {
     private AuroraCards aurora;
     private HanoiCards hanoi;
     private HanoiRowCards hanoiRow;
+    private NightCards night;
     private LiveData live;
     private java.util.Set<String> hidden = java.util.Collections.emptySet();
     private Typeface regular;
@@ -95,7 +96,7 @@ public final class DashboardView extends View {
     private final MinuteTicker ticker = new MinuteTicker(this::onTick);
 
     private void onTick() {
-        if (hanoi == null) return;
+        if (hanoi == null && night == null) return;
         if (live != null) live.refreshLunar();
         invalidate();
     }
@@ -129,6 +130,16 @@ public final class DashboardView extends View {
         aurora = on ? new AuroraCards(getContext()) : null;
         hanoi = null;
         hanoiRow = null;
+        night = null;
+        invalidate();
+    }
+
+    /** Switches to the third Hà Nội card design: weather, prices and the lunar date (DesignFrame.PANEL). */
+    void setNight(boolean on) {
+        night = on ? new NightCards(getContext()) : null;
+        hanoi = null;
+        hanoiRow = null;
+        aurora = null;
         invalidate();
     }
 
@@ -136,6 +147,7 @@ public final class DashboardView extends View {
     void setHanoi(boolean on) {
         hanoi = on ? new HanoiCards(getContext()) : null;
         hanoiRow = null;
+        night = null;
         aurora = null;
         invalidate();
     }
@@ -144,6 +156,7 @@ public final class DashboardView extends View {
     void setHanoiRow(boolean on) {
         hanoiRow = on ? new HanoiRowCards(getContext()) : null;
         hanoi = null;
+        night = null;
         aurora = null;
         invalidate();
     }
@@ -155,6 +168,10 @@ public final class DashboardView extends View {
         if (w <= 0 || h < MIN_HEIGHT_DP * d) return;
         if (hanoi != null) {
             hanoi.drawAll(c, w, h, live, hidden);
+            return;
+        }
+        if (night != null) {
+            night.drawAll(c, w, h, live, hidden);
             return;
         }
         float[] all = widths != null ? widths : new float[] {1.5f, 1f, 1f};

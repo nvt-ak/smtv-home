@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app library's mark in the right-hand panel (design_profile hanoi3): a blue rounded square with four tiles. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="52dp" android:height="52dp"
+    android:viewportWidth="52" android:viewportHeight="52">
+    <path android:fillColor="#FF2F8BFF"
+        android:pathData="M12,0h28a12,12 0 0 1 12,12v28a12,12 0 0 1 -12,12h-28a12,12 0 0 1 -12,-12v-28a12,12 0 0 1 12,-12z" />
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M13,13h11v11h-11z M28,13h11v11h-11z M13,28h11v11h-11z M28,28h11v11h-11z" />
+</vector>

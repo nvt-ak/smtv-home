@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Right-hand panel row (design_profile hanoi3): nothing at rest, a gold ring and a chevron on focus. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <layer-list>
+            <item>
+                <shape android:shape="rectangle">
+                    <corners android:radius="28dp" />
+                    <gradient android:angle="0" android:startColor="#552A1A08" android:endColor="#33140E06" />
+                    <stroke android:width="3dp" android:color="#FFF5C26B" />
+                </shape>
+            </item>
+            <item android:width="22dp" android:height="22dp" android:gravity="center_vertical|end" android:end="34dp"
+                android:drawable="@drawable/ic_chevron_right" />
+        </layer-list>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="28dp" />
+            <solid android:color="#00000000" />
+        </shape>
+    </item>
+</selector>
